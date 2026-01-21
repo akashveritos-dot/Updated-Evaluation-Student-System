@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | MyApp{% endblock %}
+
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+<div class="row g-4" id="tutorial-tools-section">
+    <!-- Users Card -->
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+            <div class="card-body">
+                <h5 class="card-title">Total Users</h5>
+                <h3>1,234</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Card -->
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #43cea2, #185a9d);">
+            <div class="card-body">
+                <h5 class="card-title">Reports</h5>
+                <h3>234</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Sessions Card -->
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #ff758c, #ff7eb3);">
+            <div class="card-body">
+                <h5 class="card-title">Active Sessions</h5>
+                <h3>89</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Tickets Card -->
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #f7971e, #ffd200);">
+            <div class="card-body">
+                <h5 class="card-title">Support Tickets</h5>
+                <h3>12</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphs Section -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">User Growth</h5>
+                <canvas id="userChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Reports Overview</h5>
+                <canvas id="reportChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Dashboard functionality
+    console.log('📊 Dashboard loaded');
+    
+    const userCtx = document.getElementById('userChart');
+    new Chart(userCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+            datasets: [{
+                label: 'Users',
+                data: [120, 150, 170, 200, 250],
+                fill: true,
+                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                borderColor: '#667eea',
+                tension: 0.4
+            }]
+        }
+    });
+
+    const reportCtx = document.getElementById('reportChart');
+    new Chart(reportCtx, {
+        type: 'bar',
+        data: {
+            labels: ['P1', 'P2', 'P3', 'P4'],
+            datasets: [{
+                label: 'Reports',
+                data: [30, 45, 28, 50],
+                backgroundColor: ['#43cea2', '#ff758c', '#f7971e', '#667eea']
+            }]
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!-- includes/header.html -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #003366;">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">VeriEval</a>
+
+        <!-- Toggle for mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar content -->
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="/home/">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/users/">Users</a></li>
+                <li class="nav-item"><a class="nav-link" href="/reports/">Reports</a></li>
+                <li class="nav-item"><a class="nav-link" href="/settings/">Settings</a></li>
+            </ul>
+
+            <!-- Search form -->
+            <form class="d-flex me-3" role="search">
+                <input class="form-control form-control-sm me-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-light btn-sm" type="submit">Search</button>
+            </form>
+
+            <!-- User dropdown -->
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if user.is_authenticated %}
+                        👤 Welcome, {{ user.get_full_name|default:user.username }} !
+                        {% else %}
+                        <a href="{% url 'login' %}">Login</a>
+                        {% endif %}
+
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/users/Profile">Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/users/ChangePassword">Change Password</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

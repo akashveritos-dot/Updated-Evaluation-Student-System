@@ -1,0 +1,52 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold text-secondary">
+            <i class="bi bi-shield-check me-2"></i>Security Audit Logs
+        </h5>
+
+        <!-- Filter Form -->
+        <form class="d-flex" method="get">
+            <input type="text" name="user" class="form-control me-2" placeholder="Filter by User..."
+                value="{{ request.GET.user }}">
+            <button class="btn btn-outline-secondary" type="submit">Filter</button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-dark text-uppercase small">
+                    <tr>
+                        <th class="ps-4">Timestamp</th>
+                        <th>User</th>
+                        <th>IP Address</th>
+                        <th>Action Description</th>
+                    </tr>
+                </thead>
+                <tbody class="font-monospace small">
+                    {% for log in logs %}
+                    <tr>
+                        <td class="ps-4 text-nowrap">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td class="fw-bold text-primary">{{ log.user.username }}</td>
+                        <td>{{ log.ip_address|default:"-" }}</td>
+                        <td>{{ log.action_description }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-search display-6 d-block mb-3 opacity-25"></i>
+                            No logs found matching criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light text-center small text-muted">
+        Showing last {{ logs.count }} records
+    </div>
+</div>
+{% endblock %}

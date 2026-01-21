@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Disable Mobile Pull-to-Refresh</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: auto;
+
+            /* Prevent pull-to-refresh on Android Chrome */
+            overscroll-behavior-y: contain;
+
+            /* iOS visual scroll performance */
+            -webkit-overflow-scrolling: auto;
+        }
+
+        .content {
+            /* min-height: 200vh; */
+            /* enough scroll space */
+            background: linear-gradient(to bottom, #fff, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border: 2px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="content">
+        <img src="images/175d7ef304b841449c033cc9275af946.png" alt="Responsive Image" />
+        <img src="images/175d7ef304b841449c033cc9275af946.png" alt="Responsive Image" />
+        <img src="images/175d7ef304b841449c033cc9275af946.png" alt="Responsive Image" />
+    </div>
+
+    <script>
+        // Prevent pull-to-refresh on some Androids
+        document.addEventListener('touchmove', function (e) {
+            if (window.scrollY <= 0) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+
+</html>

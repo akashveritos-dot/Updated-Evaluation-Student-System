@@ -1,0 +1,77 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Data Synchronization</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Master Data Sync</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Sync Master Tables</div>
+                            <p class="mt-2 small">Syncs: Academic Year, College, Course, Events, Subjects, Users,
+                                Students, Question Papers.</p>
+                        </div>
+                        <div class="col-auto">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="sync_all">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sync fa-sm"></i> Start Sync
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Transaction Data Sync</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Sync Transactions</div>
+                            <p class="mt-2 small">Syncs: Exam Copies, Marks (Limit 5000 rows). Heavy Operation.</p>
+                        </div>
+                        <div class="col-auto">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="sync_transactions">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-database fa-sm"></i> Sync Transactions
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Status Log</h6>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% else %}
+            <p>No actions performed yet. Click a button above to start.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

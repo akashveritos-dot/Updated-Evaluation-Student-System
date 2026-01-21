@@ -1,0 +1,68 @@
+.fixed-col {
+    width: 100px;
+    background-color: #f8f9fa;
+}
+
+.question-section {
+    flex: 1;
+    overflow-x: auto;
+}
+
+.table thead {
+    background-color: #e9ecef;
+}
+
+.btn-xs {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 0.2rem;
+    margin-top: -2px;
+}
+
+.question-section .table-responsive {
+    height: 300px;
+    overflow: auto;
+    position: relative;
+}
+
+.question-section .table-responsive thead {
+    position: sticky;
+    top: -1px;
+    box-shadow: 0px 0px 5px black;
+}
+.question-section .table-responsive tfoot {
+    position: sticky;
+    bottom: -1px;
+    box-shadow: 0px 0px 5px black;
+}
+
+.carousel-control-next,
+.carousel-control-prev {
+    width: 2px;
+    min-width: 20px;
+    background: rgba(0, 0, 0, 0.479);
+}
+
+.right-section{
+    height: 100vh;
+    min-height: 700px;
+    position: sticky;
+    top: 0;
+    background-color: aqua;
+
+}
+.cursor-pointer{
+    cursor: pointer;
+}
+
+*{
+    font-size: small;
+}
+
+
+/******************Second  ********************/
+#sliderCarousel{
+    height: calc(100vh - 33px);
+    overflow: scroll;
+}

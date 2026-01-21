@@ -1,0 +1,21 @@
+<!-- templates/includes/sidebar.html -->
+<div class="sidebar" id="tutorial-nav-panel">
+    {% if menu_items %}
+    {% for item in menu_items %}
+        <a href="{{ item.url }}" class="{% if request.path == item.url %}active{% endif %}">
+            {{ item.icon }} {{ item.label }}
+        </a>
+    {% endfor %}
+{% else %}
+    <p class="text-white px-3">Menu not available</p>
+{% endif %}
+
+</div>
+
+<style>
+    .sidebar a.active {
+        background-color: #495057;
+        color: #fff;
+        font-weight: bold;
+    }
+</style>

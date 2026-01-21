@@ -1,0 +1,91 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col d-flex justify-content-between align-items-center">
+        <h2>Subject Management</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+            <i class="bi bi-plus-circle"></i> Add New Subject
+        </button>
+    </div>
+</div>
+
+<div class="card-box">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Subject ID</th>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Created</th>
+                <th>Bundles</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject in subjects %}
+            <tr>
+                <td><code>{{ subject.subject_id }}</code></td>
+                <td>{{ subject.name }}</td>
+                <td>{{ subject.code|default:"-" }}</td>
+                <td>{{ subject.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <span class="badge bg-info">{{ subject.bundles.count }} bundles</span>
+                </td>
+                <td>
+                    {% if subject.bundles.count == 0 %}
+                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this subject?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_subject">
+                        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="text-muted small">Cannot delete (has bundles)</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">No subjects added yet. Click "Add New Subject" to get
+                    started.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_subject">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Subject</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Subject ID will be auto-generated (e.g., SUB-2024-X9Z2)</p>
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Add Subject</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

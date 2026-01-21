@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ form_title|default:"User Form" }}{% endblock %}
+
+{% block content %}
+{% load widget_tweaks %}
+<h3 class="text-center">{{ form_title|default:"User Form" }}</h3>
+
+<form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="row mb-4 align-items-start">
+        <!-- Label -->
+        <div class="col-md-3 col-form-label fw-semibold" style="text-transform: capitalize;">
+            {{ field.label_tag }}
+        </div>
+
+        <!-- Input Field -->
+        <div class="col-md-6">
+            {% if field|widget_type == "checkboxselectmultiple" %}
+            {{ field }}
+            {% else %}
+                {{ field|add_class:"form-control" }}
+            {% endif %}
+            {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Error Message -->
+        <div class="col-md-3">
+            {% if field.errors %}
+                <div class="text-danger small">
+                    {{ field.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Button Row Right Aligned -->
+    <div class="text-end">
+        <button type="submit" class="btn btn-primary me-2">Save</button>
+        <button type="reset" class="btn btn-secondary">Reset</button>
+    </div>
+</form>    
+{% endblock %}

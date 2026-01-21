@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VeriEval Marking Panel</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: Arial, sans-serif; background: #f0f2f5; color: #333;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      background: #1e88e5;
+      color: #fff;
+      padding: 16px;
+      font-size: 1.5rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .tool-panel {
+      width: 5%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-left: 1px solid #ccc;
+      border-right: 1px solid #ccc;
+      background: #fff;
+    }
+    .pagination {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center; /* Center pagination controls */
+  padding: 12px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  background: #fff;
+  width: 100%; /* Ensures it spans the full width of parent */
+  box-sizing: border-box; /* Includes padding in width calculation */
+}
+
+.pagination-controls {
+  display: flex;
+  flex-wrap: wrap; /* Allows wrapping on smaller screens */
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow-x: auto; /* Enables horizontal scroll if buttons overflow */
+  width: 100%;
+  padding: 4px 0;
+}
+
+    .tool-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .question-table, .marks-table {
+      background: #fff;
+      padding: 16px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      height: 50%;
+      overflow-y: auto;
+      border-bottom: 1px solid #ddd;
+    }
+    .marks-table {
+      border-top: none;
+    }
+    .page-btn, .tool-btn {
+      padding: 4px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 32px;
+      height: 32px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .page-btn.unchecked { background-color: #e0e0e0; color: #333; }
+    .page-btn.current { background-color: #2196f3; color: white; }
+    .page-btn.checked { background-color: #4caf50; color: white; }
+    .arrow-btn {
+      background: #4caf50;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      padding: 4px 6px;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .pdf-viewer {
+      width: 50%;
+      padding: 16px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .tool-controls .tool-btn {
+      background-color: #aee4ff;
+      color: #003344;
+    }
+    .tool-controls .tool-btn.active {
+      background: #007acc;
+      color: white;
+    }
+    .pdf-image {
+      max-height: 80vh;
+      max-width: 100%;
+      object-fit: contain;
+      border: 1px solid #ccc;
+    }
+    .mark-overlay {
+      position: absolute;
+      font-size: 24px;
+      color: red;
+      pointer-events: none;
+      user-select: none;
+    }
+    .footer {
+      padding: 12px 16px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+      }
+      .pagination { display: none; border-left: none; border-top: 1px solid #ccc; width: 100%; }
+      .pagination.show { display: flex; flex-direction: row; }
+      .pagination-toggle { display: block; }
+      .pdf-viewer { width: 100%; }
+      .tool-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">VeriEval Marking Panel</div>
+    <div class="main-content">
+            <div class="pdf-viewer">
+      <div id="pagination" class="pagination">
+        <div class="arrow-btn" id="arrowUp">↑</div>
+        <div id="paginationControls" class="pagination-controls"></div>
+        <div class="arrow-btn" id="arrowDown">↓</div>
+      </div>
+
+
+        <h2>Answer Sheet Preview</h2>
+        <div id="pdfContainer" style="position: relative; width: 100%; text-align: center;"></div>
+      </div>
+
+      <div class="tool-panel">
+        <div id="reactToolPalette" class="tool-controls"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; width: 40%;">
+        <div class="question-table">
+          <h2>Questions</h2>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Question</th></tr>
+            </thead>
+            <tbody id="questionTableBody">
+              <tr data-question-id="1"><td>1</td><td>What is the capital of France?</td></tr>
+              <tr data-question-id="2"><td>2</td><td>Explain the theory of relativity.</td></tr>
+              <tr data-question-id="3"><td>3</td><td>Name the process of photosynthesis.</td></tr>
+                          <tr data-question-id="1"><td>1</td><td>What is the capital of France?</td></tr>
+              <tr data-question-id="2"><td>2</td><td>Explain the theory of relativity.</td></tr>
+              <tr data-question-id="3"><td>3</td><td>Name the process of photosynthesis.</td></tr>
+                          <tr data-question-id="1"><td>1</td><td>What is the capital of France?</td></tr>
+              <tr data-question-id="2"><td>2</td><td>Explain the theory of relativity.</td></tr>
+              <tr data-question-id="3"><td>3</td><td>Name the process of photosynthesis.</td></tr>
+                          <tr data-question-id="1"><td>1</td><td>What is the capital of France?</td></tr>
+              <tr data-question-id="2"><td>2</td><td>Explain the theory of relativity.</td></tr>
+              <tr data-question-id="3"><td>3</td><td>Name the process of photosynthesis.</td></tr>
+                          <tr data-question-id="1"><td>1</td><td>What is the capital of France?</td></tr>
+              <tr data-question-id="2"><td>2</td><td>Explain the theory of relativity.</td></tr>
+              <tr data-question-id="3"><td>3</td><td>Name the process of photosynthesis.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="marks-table">
+          <h2>Marks</h2>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Marks</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>5</td></tr>
+              <tr><td>2</td><td>8</td></tr>
+              <tr><td>3</td><td>7</td></tr>
+                          <tr><td>1</td><td>5</td></tr>
+              <tr><td>2</td><td>8</td></tr>
+              <tr><td>3</td><td>7</td></tr>
+                          <tr><td>1</td><td>5</td></tr>
+              <tr><td>2</td><td>8</td></tr>
+              <tr><td>3</td><td>7</td></tr>
+                          <tr><td>1</td><td>5</td></tr>
+              <tr><td>2</td><td>8</td></tr>
+              <tr><td>3</td><td>7</td></tr>
+                          <tr><td>1</td><td>5</td></tr>
+              <tr><td>2</td><td>8</td></tr>
+              <tr><td>3</td><td>7</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="save-btn" hidden>Save &amp; Submit</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    {{ images|json_script:"imageData" }}
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      function ToolPalette() {
+        const [selectedTool, setSelectedTool] = useState(null);
+        const symbols = ["✔", "✘", "✎", ".", "/", "1/2", "1/3", "1/4"];
+        const numbers = Array.from({ length: 10 }, (_, i) => i.toString());
+
+        const renderButtons = (items) => items.map((item, idx) => (
+          <button
+            key={idx}
+            className={`tool-btn ${selectedTool === item ? 'active' : ''}`}
+            onClick={() => setSelectedTool(item)}
+          >{item}</button>
+        ));
+
+        useEffect(() => {
+          const pdf = document.getElementById('pdfContainer');
+          const imageSources = JSON.parse(document.getElementById("imageData").textContent);
+          const pagination = document.getElementById("paginationControls");
+          const paginationDiv = document.getElementById("pagination");
+          let currentPage = 0;
+          const pageStatus = {};
+
+          pdf.innerHTML = imageSources.map((src, idx) => `
+            <div style="position:relative;">
+              <img class="pdf-image" src="${src}" style="display:none;" />
+              <div class="overlay" data-page="${idx}" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+            </div>`).join("");
+
+          const images = document.querySelectorAll(".pdf-image");
+
+          function showPage(index) {
+            images.forEach((img, i) => img.style.display = i === index ? "block" : "none");
+            currentPage = index;
+            renderPagination();
+            const currentBtn = document.querySelector(`.page-btn[data-index="${index}"]`);
+            if (currentBtn) currentBtn.scrollIntoView({ block: "center", behavior: "smooth" });
+          }
+
+          function renderPagination() {
+            pagination.innerHTML = "";
+            images.forEach((_, index) => {
+              const btn = document.createElement("button");
+              btn.innerText = index + 1;
+              btn.className = "page-btn";
+              btn.setAttribute("data-index", index);
+              if (index === currentPage) btn.classList.add("current");
+              else if (pageStatus[index]) btn.classList.add("checked");
+              else btn.classList.add("unchecked");
+              btn.onclick = () => {
+                showPage(index);
+                if (window.innerWidth <= 768) paginationDiv.classList.remove("show");
+              };
+              pagination.appendChild(btn);
+            });
+          }
+
+          showPage(currentPage);
+
+          pdf.addEventListener('click', (e) => {
+            if (!selectedTool) {
+              alert("Select a marking tool first!");
+              return;
+            }
+            const container = pdf.querySelectorAll(".overlay")[currentPage];
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const overlay = document.createElement('div');
+            overlay.className = 'mark-overlay';
+            overlay.style.left = `${x - 12}px`;
+            overlay.style.top = `${y - 12}px`;
+            overlay.innerText = selectedTool;
+            container.appendChild(overlay);
+            pageStatus[currentPage] = true;
+            renderPagination();
+          });
+
+          document.getElementById('arrowUp').addEventListener('click', () => {
+            if (currentPage > 0) showPage(currentPage - 1);
+          });
+          document.getElementById('arrowDown').addEventListener('click', () => {
+            if (currentPage < images.length - 1) showPage(currentPage + 1);
+          });
+        }, [selectedTool]);
+
+        return (
+          <>
+            {symbols.map((item, idx) => (
+              <button key={"s"+idx} className={`tool-btn ${selectedTool === item ? 'active' : ''}`} onClick={() => setSelectedTool(item)}>{item}</button>
+            ))}
+            {numbers.map((item, idx) => (
+              <button key={"n"+idx} className={`tool-btn ${selectedTool === item ? 'active' : ''}`} onClick={() => setSelectedTool(item)}>{item}</button>
+            ))}
+          </>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("reactToolPalette"));
+      root.render(<ToolPalette />);
+    </script>
+</body>
+</html>

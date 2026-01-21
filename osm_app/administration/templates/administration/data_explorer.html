@@ -1,0 +1,89 @@
+{% extends 'administration/base_admin.html' %}
+{% load admin_extras %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Super Admin Data Explorer</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Select Table to View</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="form-inline">
+                <select name="model" class="form-control mr-2" onchange="this.form.submit()">
+                    <option value="">-- Select Table --</option>
+                    {% for name in model_names %}
+                    <option value="{{ name }}" {% if name == selected_model_name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Load Data</button>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_model_name and data %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Data: {{ selected_model_name }} (Total: {{
+                data.paginator.count }})</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            {% for field in fields %}
+                            <th>{{ field }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr>
+                            {% for field in fields %}
+                            <td>
+                                {# Django template hack to get dynamic attribute #}
+                                {% with val=item|get_attr:field %}
+                                {{ val }}
+                                {% endwith %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-3">
+                <span class="step-links">
+                    {% if data.has_previous %}
+                    <a href="?model={{ selected_model_name }}&page=1" class="btn btn-sm btn-outline-primary">&laquo;
+                        first</a>
+                    <a href="?model={{ selected_model_name }}&page={{ data.previous_page_number }}"
+                        class="btn btn-sm btn-outline-primary">previous</a>
+                    {% endif %}
+
+                    <span class="current mx-2">
+                        Page {{ data.number }} of {{ data.paginator.num_pages }}
+                    </span>
+
+                    {% if data.has_next %}
+                    <a href="?model={{ selected_model_name }}&page={{ data.next_page_number }}"
+                        class="btn btn-sm btn-outline-primary">next</a>
+                    <a href="?model={{ selected_model_name }}&page={{ data.paginator.num_pages }}"
+                        class="btn btn-sm btn-outline-primary">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+
+        </div>
+    </div>
+    {% elif selected_model_name %}
+    <div class="alert alert-info">No data found in table {{ selected_model_name }}</div>
+    {% endif %}
+</div>
+{% endblock %}

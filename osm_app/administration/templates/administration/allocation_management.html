@@ -1,0 +1,99 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Allocation Management</h2>
+        <p class="text-muted">Assign Answer Sheets to Faculty for evaluation.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Assignment Form -->
+    <div class="col-md-4">
+        <div class="card-box">
+            <h4>Assign Sheets</h4>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="assign_sheets">
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-arrow-right-circle"></i> Assign
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Assignments -->
+    <div class="col-md-8">
+        <div class="card-box">
+            <h4>Active Assignments</h4>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sheet ID</th>
+                            <th>Bundle</th>
+                            <th>Faculty</th>
+                            <th>Assigned At</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assign in assignments %}
+                        <tr>
+                            <td><code>{{ assign.answer_sheet_id }}</code></td>
+                            <td>{{ assign.bundle.name }}</td>
+                            <td>
+                                {{ assign.assigned_to.username }}
+                                <br>
+                                <small class="text-muted">{{ assign.assigned_to.profile.unique_user_id }}</small>
+                            </td>
+                            <td>{{ assign.assigned_at|date:"M d, H:i" }}</td>
+                            <td>
+                                {% if assign.status == 'ASSIGNED' %}
+                                <span class="badge bg-primary">Assigned</span>
+                                {% elif assign.status == 'IN_PROGRESS' %}
+                                <span class="badge bg-warning text-dark">In Progress</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ assign.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" class="d-inline"
+                                    onsubmit="return confirm('Revoke this sheet from the user?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="revoke_sheet">
+                                    <input type="hidden" name="sheet_id" value="{{ assign.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No active assignments found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Faculty Dashboard</span>
+            <div>
+                <span class="text-white me-3">{{ request.user.username }}</span>
+                <a href="{% url 'Logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2>Assigned Answer Sheets</h2>
+                <p class="text-muted">Total: {{ total_sheets }} sheet(s) assigned</p>
+            </div>
+        </div>
+
+        {% for bundle_id, data in bundles_data.items %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-folder"></i> {{ data.bundle.name }}
+                    <span class="badge bg-light text-dark ms-2">{{ data.bundle.bundle_id }}</span>
+                </h5>
+                <small>Subject: {{ data.bundle.subject.name }}</small>
+                {% if data.question_paper %}
+                <br><small><i class="bi bi-file-earmark-text"></i> Question Paper: {{ data.question_paper.title
+                    }}</small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Sheet ID</th>
+                                <th>PDF File</th>
+                                <th>Status</th>
+                                <th>Assigned Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sheet in data.sheets %}
+                            <tr>
+                                <td><code>{{ sheet.answer_sheet_id }}</code></td>
+                                <td>{{ sheet.pdf_file.original_name }}</td>
+                                <td>
+                                    {% if sheet.status == 'ASSIGNED' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% elif sheet.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                    {% elif sheet.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ sheet.assigned_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    {% if sheet.status != 'COMPLETED' %}
+                                    <a href="{% url 'faculty:evaluate_sheet' sheet.id %}"
+                                        class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil"></i> Evaluate
+                                    </a>
+                                    {% else %}
+                                    <span class="text-success"><i class="bi bi-check-circle"></i> Done</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

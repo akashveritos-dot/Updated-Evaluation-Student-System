@@ -1,0 +1,66 @@
+{% extends 'administration/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'administration:manage_papers' %}">Question Papers</a></li>
+                <li class="breadcrumb-item active">{{ paper.name }}</li>
+            </ol>
+        </nav>
+        <h2>Manage Questions</h2>
+    </div>
+    <span class="badge bg-primary fs-6">{{ paper.total_marks }} Total Marks</span>
+</div>
+
+<div class="card-box">
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 100px;">Q.No</th>
+                    <th>Question Text</th>
+                    <th style="width: 100px;">Marks</th>
+                    <th style="width: 100px;">CO</th>
+                    <th style="width: 100px;">BL</th>
+                    <th style="width: 50px;">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in formset %}
+                <tr>
+                    <td>
+                        {{ form.id }}
+                        {{ form.question_no|add_class:"form-control" }}
+                    </td>
+                    <td>{{ form.text|add_class:"form-control" }}</td>
+                    <td>{{ form.max_marks|add_class:"form-control" }}</td>
+                    <td>{{ form.co|add_class:"form-control" }}</td>
+                    <td>{{ form.bl|add_class:"form-control" }}</td>
+                    <td class="text-center align-middle">
+                        {% if form.instance.pk %}
+                        <div class="form-check d-flex justify-content-center">
+                            {{ form.DELETE }}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
+            <a href="{% url 'administration:manage_papers' %}" class="btn btn-secondary btn-lg">Back</a>
+        </div>
+    </form>
+    <div class="alert alert-info mt-3">
+        <i class="bi bi-info-circle me-2"></i> Save changes to add more rows.
+    </div>
+</div>
+{% endblock %}

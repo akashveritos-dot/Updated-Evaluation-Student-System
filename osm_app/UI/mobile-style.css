@@ -1,0 +1,6 @@
+#sliderCarousel {
+    height: calc(100vh - 200px);
+}
+.carousel-control-next {
+    right: 0;
+}

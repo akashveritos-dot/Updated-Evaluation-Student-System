@@ -1,0 +1,166 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col d-flex justify-content-between align-items-center">
+        <h2>Question Paper Management</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadPaperModal">
+            <i class="bi bi-cloud-upload"></i> Upload Question Paper
+        </button>
+    </div>
+</div>
+
+<div class="card-box">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Paper ID</th>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Total Marks</th>
+                <th>Questions</th>
+                <th>File</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paper in papers %}
+            <tr>
+                <td><code>{{ paper.paper_id }}</code></td>
+                <td>{{ paper.title }}</td>
+                <td>{{ paper.subject.name }}</td>
+                <td><span class="badge bg-info">{{ paper.total_marks }} marks</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse"
+                        data-bs-target="#questions{{ paper.id }}">
+                        {{ paper.questions.count }} questions
+                    </button>
+                </td>
+                <td>
+                    <a href="{{ paper.file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-file-earmark-pdf"></i> View
+                    </a>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal"
+                        data-bs-target="#addQuestionModal{{ paper.id }}">
+                        <i class="bi bi-plus"></i> Add Question
+                    </button>
+                    {% if paper.answer_sheets.count == 0 %}
+                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this paper?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_paper">
+                        <input type="hidden" name="paper_id" value="{{ paper.id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr class="collapse" id="questions{{ paper.id }}">
+                <td colspan="7">
+                    <div class="p-3 bg-light">
+                        <h6>Questions in {{ paper.title }}</h6>
+                        {% if paper.questions.all %}
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Q#</th>
+                                    <th>Question ID</th>
+                                    <th>Description</th>
+                                    <th>Max Marks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for question in paper.questions.all %}
+                                <tr>
+                                    <td><strong>{{ question.index_number }}</strong></td>
+                                    <td><code>{{ question.question_id }}</code></td>
+                                    <td>{{ question.description|truncatewords:15 }}</td>
+                                    <td>{{ question.max_marks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p class="text-muted">No questions added yet.</p>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Add Question Modal for this paper -->
+            <div class="modal fade" id="addQuestionModal{{ paper.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_question">
+                        <input type="hidden" name="paper_id" value="{{ paper.id }}">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Question to {{ paper.title }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-muted small">Question will be auto-numbered as Q{{
+                                    paper.questions.count|add:1 }}</p>
+                                {% for field in question_form %}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-success">Add Question</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">No question papers uploaded yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Upload Paper Modal -->
+<div class="modal fade" id="uploadPaperModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="upload_paper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Question Paper</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Paper ID will be auto-generated (e.g., QP-2024-X9Z2)</p>
+                    {% for field in paper_form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Upload Paper</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

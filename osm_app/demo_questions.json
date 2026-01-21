@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "question_no": "Q1",
+        "question": "Explain the concept of demo evaluation.",
+        "marks": 10.0,
+        "co": "CO1",
+        "bl": "L1"
+    },
+    {
+        "id": 2,
+        "question_no": "Q2",
+        "question": "What are the benefits of using a demo user?",
+        "marks": 15.0,
+        "co": "CO2",
+        "bl": "L2"
+    },
+    {
+        "id": 3,
+        "question_no": "Q3",
+        "question": "Describe the process of bypassing authentication.",
+        "marks": 10.0,
+        "co": "CO1",
+        "bl": "L1"
+    },
+    {
+        "id": 4,
+        "question_no": "Q4",
+        "question": "Compare and contrast production and demo environments.",
+        "marks": 20.0,
+        "co": "CO3",
+        "bl": "L4"
+    },
+    {
+        "id": 5,
+        "question_no": "Q5",
+        "question": "Write a short note on frontend testing.",
+        "marks": 5.0,
+        "co": "CO1",
+        "bl": "L2"
+    }
+]

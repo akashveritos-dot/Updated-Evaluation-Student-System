@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ form_title|default:"User Form" }}{% endblock %}
+
+{% block content %}
+<h3 class="text-center">{{ form_title|default:"User Form" }}</h3>
+
+<table class="table table-bordered table-striped table-hover">
+    <tbody>
+        <tr>
+            <th style="width: 25%;">Name</th>
+            <td>{{ profile.user_name }}</td>
+        </tr>
+        <tr>
+            <th>Father's Name</th>
+            <td>{{ profile.user_fathers_name }}</td>
+        </tr>
+        <tr>
+            <th>Date of Birth</th>
+            <td>{{ profile.user_dob }}</td>
+        </tr>
+        <tr>
+            <th>PAN No</th>
+            <td>{{ profile.user_pan_no }}</td>
+        </tr>
+        <tr>
+            <th>Mobile Number</th>
+            <td>{{ profile.user_mobile_no }}</td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td>{{ profile.user.email }}</td>
+        </tr>
+        <tr>
+            <th>Designation</th>
+            <td>{{ profile.user_designation }}</td>
+        </tr>
+        <tr>
+            <th>College</th>
+            <td>{{ profile.user_college }}</td>
+        </tr>
+        <tr>
+            <th>Experience</th>
+            <td>{{ profile.user_experience }}</td>
+        </tr>
+        <tr>
+            <th>Qualification</th>
+            <td>{{ profile.user_qualification }}</td>
+        </tr>
+        <tr>
+            <th>Bank Name</th>
+            <td>{{ profile.user_bank_name }}</td>
+        </tr>
+        <tr>
+            <th>Account Number</th>
+            <td>{{ profile.user_bank_acnt_no }}</td>
+        </tr>
+        <tr>
+            <th>IFSC Code</th>
+            <td>{{ profile.user_bank_ifsc_code }}</td>
+        </tr>
+        <tr>
+            <th>Branch Name</th>
+            <td>{{ profile.user_bank_branch_name }}</td>
+        </tr>
+        <tr>
+            <th>Created On</th>
+            <td>{{ profile.created_on }}</td>
+        </tr>
+        <tr>
+            <th>Updated On</th>
+            <td>{{ profile.updated_on }}</td>
+        </tr>
+    </tbody>
+</table>
+<a href="{% url 'Edit_Profile' %}" class="btn btn-warning">Edit Profile</a>
+{% endblock %}

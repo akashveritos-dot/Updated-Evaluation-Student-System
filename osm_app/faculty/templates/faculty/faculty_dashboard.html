@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Faculty Dashboard</h2>
+    <p class="lead">Welcome, {{ request.user.username }}</p>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Your Allocated Students</h5>
+        </div>
+        <div class="card-body">
+            {% if allocations %}
+            <div class="list-group">
+                {% for alloc in allocations %}
+                <a href="{% url 'faculty:evaluation' alloc.id %}"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">{{ alloc.student.username }}</h5>
+                        <p class="mb-1 text-muted">
+                            Batch: {{ alloc.batch|default:"N/A" }} |
+                            <span class="badge bg-secondary">{{ alloc.status }}</span>
+                        </p>
+                    </div>
+                    <span class="btn btn-outline-primary btn-sm">Evaluate <i class="bi bi-arrow-right"></i></span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                You have no students allocated for evaluation yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

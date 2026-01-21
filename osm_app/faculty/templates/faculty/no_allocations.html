@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card text-center shadow">
+        <div class="card-body">
+            <h2 class="card-title text-muted">No Evaluations Assigned</h2>
+            <p class="card-text lead">You currently have no pending evaluations assigned to you.</p>
+            <p>Please contact the administrator if you believe this is an error.</p>
+            <a href="{% url 'Logout' %}" class="btn btn-secondary">Logout</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

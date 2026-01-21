@@ -1,0 +1,43 @@
+{% extends 'administration/base_admin.html' %}
+
+{% block content %}
+<div class="card-box">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>Data Explorer</h4>
+        <div class="btn-group">
+            <a href="?model=actionlog"
+                class="btn btn-outline-primary {% if model_name == 'actionlog' %}active{% endif %}">Audit Logs</a>
+            <a href="?model=submission"
+                class="btn btn-outline-primary {% if model_name == 'submission' %}active{% endif %}">Submissions</a>
+            <a href="?model=users" class="btn btn-outline-primary {% if model_name == 'users' %}active{% endif %}">All
+                Users</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    {% for header in headers %}
+                    <th>{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    {% for cell in row %}
+                    <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ headers|length }}" class="text-center">No data found or model not selected.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted mt-2">Showing last 100 records only.</p>
+</div>
+{% endblock %}

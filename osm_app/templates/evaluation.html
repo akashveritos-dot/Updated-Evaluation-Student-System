@@ -1,0 +1,4246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <title>Split Layout with Slider and Questions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+
+  <script>
+    // Global variable to store current PDF ID for real-time saving
+    // Defaults to empty string if not provided in context
+    const currentPdfId = "{{ current_pdf_id|default:'' }}";
+
+    // Function to save real-time actions to backend
+    function saveRealTimeAction(payload) {
+      if (!currentPdfId) {
+        console.warn("Cannot save real-time action: PDF ID not found.");
+        // We might still want to log audit trail even if visuals fail
+      }
+
+      // Add PDF ID to payload
+      payload.pdf_id = currentPdfId;
+
+      fetch('/faculty/save-realtime-action/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).then(d => {
+        // Silent success
+        if (d.success) {
+          console.log('Action saved successfully');
+        } else {
+          console.error('Failed to save action:', d.message);
+        }
+      }).catch(e => console.error('Error saving action:', e));
+    }
+  </script>
+
+  <!-- Loading Spinner CSS -->
+  <style>
+    @keyframes spinner-border {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner-border {
+      display: inline-block;
+      width: 2rem;
+      height: 2rem;
+      vertical-align: text-bottom;
+      border: 0.25em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-border .75s linear infinite;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Diagonal Swipe Button Style - From Uiverse.io by SujitAdroja */
+    .diagonal-btn {
+      color: blue;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 2px solid black;
+      padding: 10px 20px;
+      font-size: 17px;
+      cursor: pointer;
+      font-weight: bold;
+      background: transparent;
+      position: relative;
+      transition: all 1s;
+      overflow: hidden;
+    }
+
+    .diagonal-btn:hover {
+      color: white;
+    }
+
+    .diagonal-btn::before {
+      content: "";
+      position: absolute;
+      height: 100%;
+      width: 0%;
+      top: 0;
+      left: -40px;
+      transform: skewX(45deg);
+      background-color: purple;
+      z-index: -1;
+      transition: all 1s;
+    }
+
+    .diagonal-btn:hover::before {
+      width: 160%;
+    }
+
+    /* Custom Gallery Button Styling */
+    .gallery-toggle-btn {
+      color: #2B2A2A;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 2px solid #000000;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: transparent;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      cursor: pointer;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gallery-toggle-btn:hover {
+      color: white;
+      background-color: #0b76ef;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(11, 118, 239, 0.3);
+    }
+
+    .gallery-toggle-btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(11, 118, 239, 0.2);
+    }
+
+    .gallery-toggle-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Timer Display Styling */
+    .timer-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      font-size: 14px;
+      color: #495057;
+      transition: all 0.3s ease;
+    }
+
+    .timer-display:hover {
+      background-color: #e9ecef;
+      border-color: #adb5bd;
+    }
+
+    .timer-icon {
+      color: #6c757d;
+      font-size: 16px;
+    }
+
+    .timer-text {
+      color: #212529;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* Enhanced Statistics Container Styling */
+    .statistics-container {
+      background: #EEEEEE;
+      border-radius: 0;
+      padding: 12px;
+      box-shadow: 0 4px 15px rgba(246, 48, 73, 0.3);
+      border: none;
+      margin: 0;
+    }
+
+    .statistics-content {
+      gap: 15px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 0;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      flex: 1;
+      justify-content: center;
+    }
+
+    .stat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      font-size: 14px;
+      color: white;
+    }
+
+    .stat-details {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: #000000 !important;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      color: #000000 !important;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Special styling for different stat items */
+    .total-questions .stat-icon {
+      background: rgba(52, 211, 153, 0.3);
+    }
+
+    .total-marks-badge .stat-icon {
+      background: rgba(251, 191, 36, 0.3);
+    }
+
+    .progress-indicator .stat-icon {
+      background: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .statistics-content {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .stat-divider {
+        width: 80%;
+        height: 1px;
+      }
+
+      .stat-item {
+        justify-content: space-between;
+        width: 100%;
+      }
+    }
+
+    /* Specific override for statistics container td */
+    #questions-table tfoot td.statistics-container {
+      background: #EEEEEE !important;
+      border: none !important;
+      padding: 12px !important;
+      vertical-align: middle !important;
+    }
+
+    /* Remove background from tutorial-action-buttons */
+    #tutorial-action-buttons {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+
+    /* Make "Go to Page:" text black */
+    #tutorial-action-buttons label {
+      color: black !important;
+    }
+
+    /* Page status animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .page-badge {
+      transition: all 0.3s ease;
+    }
+
+    .page-badge:hover {
+      transform: scale(1.1);
+      z-index: 10;
+    }
+
+    /* Custom 3D Flip Checkbox - From Uiverse.io by SharpTH */
+    .cbx {
+      -webkit-perspective: 20;
+      perspective: 20;
+      position: relative;
+      border: 2px solid #e8e8eb;
+      background: #e8e8eb;
+      border-radius: 4px;
+      transform: translate3d(0, 0, 0);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 24px;
+      height: 24px;
+      display: inline-block;
+      margin: 0;
+    }
+
+    .cbx:hover {
+      border-color: #0b76ef;
+    }
+
+    .flip {
+      display: block;
+      transition: all 0.4s ease;
+      transform-style: preserve-3d;
+      position: relative;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+    }
+
+    #cbx {
+      display: none;
+    }
+
+    #cbx:checked~.flip {
+      transform: rotateY(180deg);
+    }
+
+    #cbx:checked~.cbx {
+      border-color: #0b76ef;
+    }
+
+    .cbx:has(#cbx:checked) {
+      border-color: #0b76ef;
+    }
+
+    .cbx:has(#cbx:checked) .flip {
+      transform: rotateY(180deg);
+    }
+
+    /* Enhanced Modal Header Styling */
+    .modal-header {
+      padding: 1rem 1.5rem !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .modal-header .btn {
+      font-weight: 500 !important;
+      letter-spacing: 0.3px !important;
+      transition: all 0.2s ease !important;
+      border-radius: 6px !important;
+      padding: 0.375rem 0.75rem !important;
+    }
+
+    .modal-header .btn:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .modal-header .btn-close {
+      margin: 0 !important;
+      padding: 0.5rem !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .modal-header .btn-close:hover {
+      opacity: 1 !important;
+      transform: scale(1.1) !important;
+    }
+
+    .modal-title {
+      font-weight: 600 !important;
+      letter-spacing: 0.5px !important;
+      font-size: 1.1rem !important;
+    }
+
+    /* Custom Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .custom-toast {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 300px;
+      max-width: 400px;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .custom-toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .custom-toast.hide {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast-icon i {
+      font-size: 14px;
+      color: white;
+    }
+
+    .toast-message {
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    .toast-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 0 0 12px 12px;
+      transition: width 3s linear;
+    }
+
+    @media (max-width: 576px) {
+      .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+      }
+
+      .custom-toast {
+        min-width: auto;
+        max-width: none;
+        padding: 14px 20px;
+        font-size: 14px;
+      }
+    }
+
+    /* Small toast notification styles */
+    .small-toast {
+      width: 300px !important;
+      font-size: 14px !important;
+    }
+
+    .small-toast .swal2-title {
+      font-size: 16px !important;
+      margin: 0 !important;
+    }
+
+    .small-toast .swal2-html-container {
+      margin: 0 !important;
+      padding: 5px 0 !important;
+    }
+
+    .front,
+    .back {
+      backface-visibility: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 2px;
+    }
+
+    .front {
+      background: #fff;
+      z-index: 1;
+    }
+
+    .back {
+      transform: rotateY(180deg);
+      background: #0b76ef;
+      text-align: center;
+      color: #fff;
+      line-height: 20px;
+      box-shadow: 0 0 0 1px #0b76ef;
+    }
+
+    .back svg {
+      margin-top: 3px;
+      fill: none;
+    }
+
+    .back svg path {
+      stroke: #fff;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Modern Confirmation Text Styling */
+    .modern-confirm-text {
+      font-weight: 500;
+      color: #2c3e50;
+      font-size: 15px;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modern-confirm-text:hover {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: #0b76ef;
+      transform: translateY(-1px);
+    }
+
+    .confirm-icon {
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .modern-confirm-text:hover .confirm-icon {
+      transform: scale(1.2);
+    }
+
+    /* Enhanced Summary Cards */
+    .sheets-summary-card {
+      background: linear-gradient(135deg, #0b76ef 0%, #0056b3 100%);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(11, 118, 239, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    .sheets-summary-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(11, 118, 239, 0.15);
+    }
+
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #ffffff;
+    }
+
+    .summary-content {
+      flex: 1;
+    }
+
+    .summary-title {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-count {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .summary-badge {
+      display: flex;
+      align-items: center;
+    }
+
+    .summary-badge .badge {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-weight: 500;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .summary-time {
+      text-align: right;
+      margin-left: auto;
+    }
+
+    .time-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1px;
+    }
+
+    .time-value {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Page Status Details */
+    .page-status-details {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .status-group {
+      margin-bottom: 4px;
+    }
+
+    .status-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .page-numbers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .page-badge {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .page-badge.attempted {
+      background: rgba(40, 167, 69, 0.3);
+      border-color: rgba(40, 167, 69, 0.5);
+    }
+
+    .page-badge.not-attempted {
+      background: rgba(220, 53, 69, 0.3);
+      border-color: rgba(220, 53, 69, 0.5);
+    }
+
+    /* Separate Page Status Summary */
+    .page-status-summary {
+      background: rgba(248, 249, 250, 0.8);
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .status-row {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .status-section {
+      flex: 1;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .status-title {
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .page-numbers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .page-badge {
+      background: rgba(255, 255, 255, 0.8);
+      color: #495057;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      transition: all 0.2s ease;
+    }
+
+    .page-badge:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-badge.attempted {
+      background: rgba(40, 167, 69, 0.15);
+      color: #155724;
+      border-color: rgba(40, 167, 69, 0.3);
+    }
+
+    .page-badge.not-attempted {
+      background: rgba(220, 53, 69, 0.15);
+      color: #721c24;
+      border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    /* Desktop only styling */
+    @media (min-width: 768px) {
+      .tutorial-nav-button {
+        color: Blue;
+        text-transform: uppercase;
+        text-decoration: none;
+        border: 2px solid Black;
+        cursor: pointer;
+        font-weight: bold;
+        background: transparent;
+        position: relative;
+        transition: all 1s;
+        overflow: hidden;
+        /* Preserve original Bootstrap button sizing */
+        padding: var(--bs-btn-padding-y) var(--bs-btn-padding-x);
+        font-size: var(--bs-btn-font-size);
+        line-height: var(--bs-btn-line-height);
+        border-radius: var(--bs-btn-border-radius);
+      }
+
+      .tutorial-nav-button:hover {
+        color: white;
+      }
+
+      .tutorial-nav-button::before {
+        content: "";
+        position: absolute;
+        height: 100%;
+        width: 0%;
+        top: 0;
+        left: -40px;
+        transform: skewX(45deg);
+        background-color: blue;
+        z-index: -1;
+        transition: all 1s;
+      }
+
+      .tutorial-nav-button:hover::before {
+        width: 150%;
+      }
+    }
+
+
+
+
+    /* Question Table */
+    #questions-table {
+      overflow: visible;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    #questions-table th,
+    #questions-table td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 8px;
+    }
+
+    #questions-table th:nth-child(1),
+    #questions-table td:nth-child(1) {
+      width: 50px;
+      text-align: center;
+    }
+
+    #questions-table th:nth-child(2),
+    #questions-table td:nth-child(2) {
+      width: auto;
+      min-width: 200px;
+    }
+
+    #questions-table th:nth-child(3),
+    #questions-table td:nth-child(3) {
+      width: 100px;
+      text-align: center;
+    }
+
+    #questions-table th:nth-child(4),
+    #questions-table td:nth-child(4) {
+      width: 80px;
+      text-align: center;
+      padding: 4px;
+    }
+
+    /* Custom Select Button Styling */
+    .select-question {
+      background: white !important;
+      border: 1px solid black !important;
+      border-radius: 3px !important;
+      padding: 2px 4px !important;
+      min-width: 24px !important;
+      min-height: 24px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: none !important;
+    }
+
+    .select-question .select-icon {
+      width: 14px !important;
+      height: 14px !important;
+      object-fit: contain !important;
+      display: block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    /* Ensure text content is hidden, only icons are shown */
+    .select-question {
+      font-size: 0 !important;
+      color: transparent !important;
+    }
+
+    .select-question i {
+      font-size: 14px !important;
+      color: inherit !important;
+    }
+
+    /* Ensure icon remains visible in all states */
+    .select-question.selected .select-icon,
+    .select-question:hover .select-icon,
+    .select-question:active .select-icon {
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: block !important;
+    }
+
+    .table-responsive {
+      overflow: visible !important;
+    }
+
+    .container-fluid {
+      overflow: visible !important;
+    }
+
+    .row {
+      overflow: visible !important;
+    }
+
+    /* Carousel scrolling - prevent unwanted scroll on Next/Previous */
+    .carousel-inner {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      scroll-behavior: auto !important;
+      height: 100% !important;
+    }
+
+    .carousel-item {
+      height: auto !important;
+      min-height: calc(100vh - 80px) !important;
+    }
+
+    /* Remove extra spacing but preserve layout structure */
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .container-fluid {
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 100vh !important;
+    }
+
+    .row {
+      margin: 0 !important;
+      height: 100vh !important;
+    }
+
+    .col-md-6 {
+      height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Carousel container - account for top navigation bar */
+    .carousel-container {
+      position: relative;
+      height: calc(100vh - 80px) !important;
+      overflow: hidden;
+    }
+
+    /* Preserve top navigation bar styling */
+    .d-flex.justify-content-between.align-items-center.flex-wrap {
+      background: #f8f9fa !important;
+    }
+
+    /* Navigation Controls - transparent and non-intrusive */
+    .carousel-control-prev,
+    .carousel-control-next {
+      position: absolute;
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      background: transparent !important;
+      border: none;
+      border-radius: 50%;
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 16px;
+      z-index: 999;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: none;
+      opacity: 0.7;
+    }
+
+    .carousel-control-prev:hover,
+    .carousel-control-next:hover {
+      background: rgba(0, 0, 0, 0.3) !important;
+      color: rgba(255, 255, 255, 0.9);
+      opacity: 1;
+    }
+
+    .carousel-control-prev {
+      left: 15px;
+    }
+
+    .carousel-control-next {
+      right: 15px;
+    }
+
+    #questions-table th {
+      background: #1B211A !important;
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    #sheet-questions-table th {
+      background: #2B2A2A !important;
+      color: white;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      padding: 0.5rem 8px;
+      /* Match py-2 (0.5rem) vertical padding */
+      border: 1px solid #212529 !important;
+      line-height: 1.2;
+      /* Ensure consistent line height */
+      height: auto;
+      /* Allow natural height */
+      text-align: center;
+    }
+
+    #questions-table td {
+      vertical-align: middle;
+      padding: 15px 8px;
+      /* Restore original padding */
+      border: 1px solid #212529 !important;
+      border-color: #212529 !important;
+      min-height: 60px;
+      /* Restore original height */
+      text-align: center;
+    }
+
+    #sheet-questions-table td {
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #212529 !important;
+      border-color: #212529 !important;
+    }
+
+    .question-text-container {
+      position: relative;
+      width: 100%;
+    }
+
+    /* Visual Row Coloring System - Status Bar Effect */
+    #questions-table tbody tr.row-green {
+      background: linear-gradient(90deg, #1a5c1a 0%, #d4edda 2%) !important;
+    }
+
+    #questions-table tbody tr.row-red {
+      background: linear-gradient(90deg, #8b0000 0%, #f8d7da 2%) !important;
+    }
+
+    #questions-table tbody tr.row-orange {
+      background: linear-gradient(90deg, #cc6600 0%, #ffe4cc 2%) !important;
+    }
+
+    /* Remove hover effects from question table rows */
+    #questions-table tbody tr:hover {
+      transform: none !important;
+      box-shadow: none !important;
+      background-color: transparent !important;
+    }
+
+    #questions-table tbody tr.selected {
+      background-color: rgba(11, 118, 239, 0.1);
+    }
+
+    #questions-table tbody tr.selected td {
+      font-weight: 600;
+    }
+
+    .question-text {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+
+
+    /* Statistics Footer Header Styling */
+    .statistics-header {
+      background: #FEB05D !important;
+      color: #212529 !important;
+      font-weight: 600;
+      padding: 12px 8px;
+      border: 1px solid #212529 !important;
+    }
+
+    .statistics-header td {
+      background: transparent !important;
+      border-color: inherit !important;
+      color: #212529 !important;
+    }
+
+    /* Image Gallery Panel Styles */
+    .d-flex.justify-content-between.align-items-center.flex-wrap {
+      position: relative !important;
+    }
+
+    .image-gallery-panel {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #007bff !important;
+      border-top: none;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+      z-index: 9999 !important;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .image-gallery-panel-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .image-gallery-panel-body {
+      background: white;
+    }
+
+    .image-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .sheet-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .sheet-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border-color: #007bff;
+    }
+
+    .sheet-thumbnail {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .sheet-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .sheet-card:hover .sheet-thumbnail img {
+      transform: scale(1.05);
+    }
+
+    .sheet-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom,
+          rgba(0, 0, 0, 0.7) 0%,
+          rgba(0, 0, 0, 0.3) 50%,
+          rgba(0, 0, 0, 0.7) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sheet-card:hover .sheet-overlay {
+      opacity: 1;
+    }
+
+    .sheet-number {
+      background: #007bff;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .sheet-nav-icon {
+      background: rgba(255, 255, 255, 0.9);
+      color: #007bff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .sheet-controls {
+      padding: 12px;
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .sheet-controls .form-check {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sheet-controls .form-check-label {
+      font-size: 13px;
+      color: #495057;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .sheet-controls .form-check-input {
+      cursor: pointer;
+    }
+
+    .sheet-controls .form-check-input:checked+.form-check-label i {
+      color: #28a745;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .sheets-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .sheet-thumbnail {
+        height: 150px;
+      }
+
+      .sheet-number {
+        font-size: 12px;
+        padding: 3px 8px;
+      }
+
+      .sheet-nav-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .sheets-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      }
+
+      .sheet-thumbnail {
+        height: 120px;
+      }
+    }
+
+    /* Hard Stop Row Coloring System - NUCLEAR FIX FOR WHITE PAINT LAYER */
+    .row-green {
+      background: linear-gradient(90deg, #1a5c1a 2%, #4CAF50 98%) !important;
+    }
+
+    .row-green td {
+      background-color: transparent !important;
+    }
+
+    .row-red {
+      background: linear-gradient(90deg, #8b0000 2%, #ff6b6b 98%) !important;
+    }
+
+    .row-red td {
+      background-color: transparent !important;
+    }
+
+    .row-orange {
+      background: linear-gradient(90deg, #cc6600 2%, #ffb366 98%) !important;
+    }
+
+    .row-orange td {
+      background-color: transparent !important;
+    }
+
+    /* Minimalist Red Alert Card Styles */
+    .minimalist-red-alert {
+      border: none !important;
+      border-left: 4px solid #b91c1c !important;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+      border-radius: 8px !important;
+      backdrop-filter: blur(10px) !important;
+      max-width: 350px !important;
+      margin: 8px !important;
+    }
+
+    .minimalist-alert-container {
+      z-index: 9999 !important;
+    }
+
+    /* Ensure SweetAlert2 icon is properly styled */
+    .minimalist-red-alert .swal2-icon {
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 24px !important;
+      height: 24px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .minimalist-red-alert .swal2-content {
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .minimalist-red-alert .swal2-html-container {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Animation classes for smooth transitions */
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeOutRight {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+
+    .animate__fadeInRight {
+      animation: fadeInRight 0.3s ease-out;
+    }
+
+    .animate__fadeOutRight {
+      animation: fadeOutRight 0.3s ease-in;
+    }
+  </style>
+
+  {% csrf_token %}
+
+  {{ questions|json_script:"questionsData" }}
+  {{ status_map|json_script:"statusData" }}
+  {{ images|json_script:"imagesData" }}
+
+
+</head>
+
+<body class="bg-light">
+  <i id="custom-cursor"
+    style="position:fixed; pointer-events:none; z-index:9999; display:none; width: 24px; height: 24px; color: #007bff;"></i>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div id="loader-main">
+    <div class="book">
+      <div class="book__pg-shadow"></div>
+      <div class="book__pg"></div>
+      <div class="book__pg book__pg--2"></div>
+      <div class="book__pg book__pg--3"></div>
+      <div class="book__pg book__pg--4"></div>
+      <div class="book__pg book__pg--5"></div>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div class="row">
+
+      <!-- Left: Carousel -->
+      <div class="col-md-6 p-0">
+        <div class="d-flex align-items-center flex-wrap px-2 py-2 bg-light">
+          <!-- Page selection and Gallery button grouped together -->
+          <div class="d-flex align-items-center gap-3">
+            <!-- Page selection - redesigned -->
+            <div class="page-navigation-container" id="tutorial-action-buttons">
+              <div class="page-nav-content">
+                <div class="page-nav-label">
+                  <img src="/media/Tool Icon/Pages.png" alt="Pages" class="page-nav-icon">
+                  <span>Page</span>
+                </div>
+                <div class="page-nav-select-wrapper">
+                  <select id="pageSelect" class="page-nav-select" onchange="goToSlide(this.value)">
+                    {% for image in images %}
+                    <option value="{{ forloop.counter0 }}">Page {{ forloop.counter }}</option>
+                    {% empty %}
+                    <option value="0">No Pages</option>
+                    {% endfor %}
+                  </select>
+                  <i class="bi bi-chevron-down page-nav-select-icon"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gallery button positioned close to page dropdown -->
+            <button class="gallery-toggle-btn" id="imageGalleryToggleBtn" onclick="toggleImageGallery()"
+              title="View All Images">
+              <img src="/media/Tool Icon/sheet.png" alt="" style="width: 20px; height: 20px;">
+              <span>Gallery</span>
+            </button>
+          </div>
+
+          <!-- Timer Display -->
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <div class="timer-display">
+              <i class="bi bi-clock timer-icon"></i>
+              <span id="timerDisplay" class="timer-text">00:00:00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Gallery Modal -->
+        <div class="modal fade" id="imageGalleryModal" tabindex="-1" aria-labelledby="imageGalleryModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                  <h5 class="modal-title mb-0" id="imageGalleryModalLabel">
+                    <i class="bi bi-images me-2"></i>Image Gallery - All 32 Pages
+                  </h5>
+                  <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-success btn-sm" onclick="selectAllImages()">
+                      <i class="bi bi-check-all me-1"></i>Select All
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm" onclick="clearAllImages()">
+                      <i class="bi bi-x-square me-1"></i>Clear All
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm" onclick="saveSelectedImages()">
+                      <i class="bi bi-save me-1"></i>Save
+                    </button>
+                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal"
+                      aria-label="Close" style="font-size: 1.2rem; opacity: 0.8;">
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-body p-1" style="max-height: 600px; overflow-y: auto;">
+                <style>
+                  #imageGalleryGrid .row {
+                    margin-bottom: 8px !important;
+                    display: flex;
+                    justify-content: center;
+                  }
+
+                  #imageGalleryGrid .col {
+                    padding: 4px !important;
+                    flex: 0 0 auto;
+                    width: 200px;
+                  }
+
+                  #imageGalleryGrid .card {
+                    margin-bottom: 0px !important;
+                    height: 220px;
+                    width: 100%;
+                    border-radius: 8px !important;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                  }
+
+                  #imageGalleryGrid .card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+                    border-color: #007bff !important;
+                  }
+
+                  #imageGalleryGrid .card-body {
+                    padding: 0 !important;
+                    display: block !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                  }
+
+                  #imageGalleryGrid .img-fluid {
+                    max-height: none !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                    object-fit: cover !important;
+                    border-radius: 4px;
+                  }
+
+                  #imageGalleryGrid .badge {
+                    font-size: 10px !important;
+                    padding: 4px 8px !important;
+                    border-radius: 12px !important;
+                  }
+
+                  #imageGalleryGrid .form-check-input {
+                    transform: scale(1.2) !important;
+                    margin: 0 !important;
+                  }
+
+                  /* Force Modal Width */
+                  #imageGalleryGrid {
+                    width: 100% !important;
+                    display: block !important;
+                  }
+
+                  /* Gallery Grid Layout - Perfect Portrait Sheets */
+                  .gallery-grid-container {
+                    display: grid !important;
+                    width: 100% !important;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+                    gap: 30px 20px !important;
+                    padding: 25px !important;
+                    justify-items: stretch;
+                    align-items: start;
+                  }
+
+                  .gallery-item {
+                    aspect-ratio: 306 / 410 !important;
+                    width: 100% !important;
+                    overflow: hidden !important;
+                    height: auto;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+                  }
+
+                  .gallery-item .card {
+                    height: 100% !important;
+                    width: 100% !important;
+                    border: 0 !important;
+                    border-radius: 8px !important;
+                    overflow: hidden !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    aspect-ratio: 306 / 410 !important;
+                  }
+
+                  .gallery-item .card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+                  }
+
+                  .gallery-item .card-body {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                    display: block !important;
+                    position: relative !important;
+                    border: 0 !important;
+                  }
+
+                  .gallery-item .image-container {
+                    width: 100% !important;
+                    height: 100% !important;
+                    display: block !important;
+                    overflow: hidden !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: 0 !important;
+                    border-radius: 0 !important;
+                    background: transparent !important;
+                    position: relative !important;
+                    line-height: 0 !important;
+                    font-size: 0 !important;
+                  }
+
+                  .gallery-item .image-container img {
+                    display: block !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    object-fit: fill !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: 0 !important;
+                    border-radius: 0 !important;
+                    transition: none !important;
+                    filter: none !important;
+                    max-height: none !important;
+                    max-width: none !important;
+                  }
+
+                  .gallery-item .image-container img:hover {
+                    /* Removed transform to prevent zooming */
+                    cursor: zoom-in;
+                    filter: none;
+                  }
+
+                  .gallery-item .controls-container {
+                    position: absolute !important;
+                    top: 10px !important;
+                    left: 10px !important;
+                    right: 10px !important;
+                    z-index: 5 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    pointer-events: none !important;
+                    display: flex !important;
+                    justify-content: space-between !important;
+                    align-items: flex-start !important;
+                  }
+
+                  .gallery-item .badge {
+                    font-size: 12px !important;
+                    padding: 5px 10px !important;
+                    border-radius: 6px !important;
+                    font-weight: 700 !important;
+                    background: rgba(0, 0, 0, 0.9) !important;
+                    color: #ffffff !important;
+                    backdrop-filter: blur(6px) !important;
+                    border: 2px solid rgba(255, 255, 255, 0.4) !important;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+                    pointer-events: auto !important;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+                  }
+
+                  .gallery-item .form-check-input {
+                    transform: scale(1.3) !important;
+                    margin: 0 !important;
+                    cursor: pointer !important;
+                    pointer-events: auto !important;
+                    background-color: rgba(255, 255, 255, 0.95) !important;
+                    border-color: rgba(0, 0, 0, 0.7) !important;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+                  }
+
+                  .gallery-item .form-check-input:checked {
+                    background-color: #007bff !important;
+                    border-color: #007bff !important;
+                  }
+                </style>
+                <div id="imageGalleryGrid" class="row g-0">
+                  <!-- Images will be loaded here -->
+                </div>
+              </div>
+              <div class="modal-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Click any image to view full size
+                  </div>
+                  <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSelectedImages()">Save Selected</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carousel Container with relative positioning -->
+        <div class="carousel-container position-relative" id="sliderCarousel" data-bs-ride="false"
+          data-bs-interval="false" data-bs-touch="false" data-bs-keyboard="false">
+          <!-- Original Carousel Inner Only -->
+          <div class="carousel-inner">
+            {% for image in images %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+              <canvas></canvas>
+              <img draggable="false" class="magnifiable-image" src="{{ image }}" class="d-block w-100"
+                alt="Slide {{ forloop.counter }}">
+            </div>
+            {% empty %}
+            <div class="carousel-item active">
+              <div class="d-flex flex-column justify-content-center align-items-center"
+                style="height: 400px; background: #f8f9fa;">
+                <i class="bi bi-file-earmark-x" style="font-size: 48px; color: #6c757d;"></i>
+                <h5 class="mt-3 text-muted">No Answer Sheets Available</h5>
+                <p class="text-muted">Please upload answer sheets to begin evaluation.</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Navigation Controls -->
+          <button class="carousel-control-prev" type="button" onclick="goToSlide('prev')">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" onclick="goToSlide('next')">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span class="visually-hidden">Next</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Tools + Table -->
+      <div class="col-md-6 d-flex flex-column p-0 right-section">
+        <div
+          class="bg-gradient-blue text-white px-3 py-2 d-flex justify-content-between align-items-center flex-wrap shadow-lg"
+          style="background: #79C9C5 !important; border: none !important; box-shadow: 0 4px 15px rgba(44, 62, 80, 0.4) !important;">
+          <h5 class="mb-0 text-center flex-grow-1 fw-bold">VeriEval Marking Panel</h5>
+          <!-- Button Group -->
+          <div class="btn-group btn-group-sm" role="group" aria-label="View & Support Buttons">
+            <button type="button" class="btn btn-modern-blue d-none d-sm-inline" id="mobileViewBtn"
+              data-bs-toggle="tooltip" title="Switch to Mobile View">
+              <i class="bi bi-phone-fill"></i>
+            </button>
+
+            <button type="button" class="btn btn-modern-purple d-none d-lg-inline" id="desktopViewBtn"
+              data-bs-toggle="tooltip" title="Switch to Desktop View">
+              <i class="bi bi-laptop-fill"></i>
+            </button>
+            <button type="button" class="btn btn-modern-cyan btn-sm" data-bs-toggle="offcanvas"
+              data-bs-target="#helpModal" title="Help" data-bs-toggle="tooltip">
+              <i class="bi bi-info-circle-fill"></i> </button>
+
+            <button type="button" class="btn btn-modern-red" id="submitEntriesBtn" data-bs-toggle="modal"
+              data-bs-target="#submitEntriesModal" title="Submit Entries">
+              <i class="bi bi-send-fill"></i> Submit
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column" style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+          <!-- Tools Column + Question Section -->
+          <div class="d-flex" style="flex: 1 1 auto; min-height: 0; flex-shrink: 1;" id="tutorial-tools-section">
+            <div
+              class="fixed-col d-flex flex-column align-items-center justify-content-start border-end p-2 gap-2 bg-light"
+              style="width: 100px; flex-shrink: 0;">
+              <div class="tools-header-tile">
+                <div class="tools-header-content">
+                  <img src="/media/Tool Icon/tool box.png" alt="Tools" class="tools-header-icon-img">
+                </div>
+              </div>
+              {% for tool in tools %}
+              {% if tool.id != 'add-marks' %}
+              <button data-name="{{ tool.id }}"
+                class="btn-tool btn btn-sm btn-outline-dark w-100 d-flex align-items-center justify-content-center"
+                data-bs-toggle="tooltip" title="{{ tool.label }}">
+
+                {% if tool.id == 'seen' %}
+                <img src="/media/Tool Icon/unseen.png" style="width:18px; height:18px;" alt="">
+                {% elif tool.id == 'mark_blank' %}
+                <img src="/media/Tool Icon/blank tool.png" style="width:18px; height:18px;" alt="">
+                {% elif tool.id == 'undo_tool' %}
+                <img src="/media/Tool Icon/undo.png" style="width:18px; height:18px;" alt="">
+
+                {% else %}
+                <i class="bi bi-{{ tool.icon }}" style="width: 18px; height: 18px;"></i>
+                {% endif %}
+
+              </button>
+              {% endif %}
+              {% endfor %}
+            </div>
+
+            <!-- Question Table -->
+            <div class="question-section" style="flex: 1; min-width: 0;">
+              <div class="table-responsive">
+                <table class="table table-bordered table-sm mb-0" id="questions-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Question</th>
+                      <th>Marks</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="4" class="text-center fw-bold statistics-container">
+                        <div class="statistics-content d-flex justify-content-between align-items-center w-100">
+                          <span class="total-questions" data-bs-toggle="tooltip" title=""
+                            data-bs-original-title="Total number of questions assigned">
+                            <i class="bi bi-question-circle me-1"></i>Total Questions: 50
+                          </span>
+                          <span class="total-marks-badge" data-bs-toggle="tooltip" title=""
+                            data-bs-original-title="Total marks obtained">
+                            <i class="bi bi-star-fill me-1"></i>0
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0" id="sheet-questions-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-bs-toggle="tooltip" title="Page Number">Page</th>
+                      <th data-bs-toggle="tooltip" title="Question Number">Q. No</th>
+                      <th data-bs-toggle="tooltip" title=""
+                        data-bs-original-title="Obtained Marks / Total Marks for the Question">Tool</th>
+                      <th data-bs-toggle="tooltip" title="Attempted Status and Bonus">Marks/Text</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="helpModal" aria-labelledby="helpOverlayLabel">
+    <div class="offcanvas-header bg-info text-white">
+      <h5 class="offcanvas-title" id="helpOverlayLabel">
+        <i class="bi bi-info-circle-fill"></i> Help & Guide
+      </h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <h6><i class="bi bi-caret-right-fill text-primary"></i> Navigation</h6>
+      <p>Use the pagination to navigate or jump using the Go To box.</p>
+
+      <h6><i class="bi bi-caret-right-fill text-primary"></i> Submitting</h6>
+      <p>Click the <strong>Submit All</strong> button when ready to submit your responses.</p>
+
+      <h6><i class="bi bi-caret-right-fill text-primary"></i> Marking Status</h6>
+      <ul>
+        <li><span class="badge bg-primary">A</span> Attempted</li>
+        <li><span class="badge bg-warning text-dark">OA</span> Over Attempted</li>
+        <li><span class="badge bg-secondary">NA</span> Not Attempted</li>
+        <li><span class="badge bg-light border">NM</span> Not Marked</li>
+      </ul>
+
+      <h6><i class="bi bi-caret-right-fill text-primary"></i> Icons Reference</h6>
+      <p>
+        <i class="bi bi-arrow-counterclockwise text-secondary"></i> Undo <br>
+        <i class="bi bi-check-circle text-success"></i> Submit All <br>
+        <i class="bi bi-x-circle text-danger"></i> Reset Field
+      </p>
+
+      <div class="alert alert-warning mt-4">
+        <i class="bi bi-exclamation-triangle"></i> Please review all answers before final submission.
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit Entries Modal -->
+  <div class="modal fade" id="submitEntriesModal" tabindex="-1" aria-labelledby="submitEntriesModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content modern-modal">
+        <div class="modal-header modern-modal-header">
+          <h5 class="modal-title modern-modal-title" id="submitEntriesModalLabel">
+            <i class="bi bi-shield-check me-2"></i>Submit Evaluation Summary
+          </h5>
+          <button type="button" class="btn-close modern-btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body modern-modal-body">
+          <!-- Statistics Summary Table -->
+          <div class="statistics-summary-section mb-4">
+            <h6 class="summary-heading mb-3">
+              <i class="bi bi-graph-up me-2"></i>Evaluation Statistics
+            </h6>
+            <div class="table-responsive">
+              <table class="table modern-stats-table">
+                <thead class="stats-header">
+                  <tr>
+                    <th>Category</th>
+                    <th>Details</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody id="statsTableBody">
+                  <tr>
+                    <td><i class="bi bi-question-circle text-primary me-2"></i>Total Questions</td>
+                    <td>All assigned questions</td>
+                    <td class="stat-number" id="modalTotalQuestions">0</td>
+                  </tr>
+                  <tr>
+                    <td><i class="bi bi-star-fill text-warning me-2"></i>Total Marks</td>
+                    <td>Marks obtained</td>
+                    <td class="stat-number" id="modalTotalMarks">0</td>
+                  </tr>
+                  <tr>
+                    <td><i class="bi bi-clock-fill text-info me-2"></i>Total Time</td>
+                    <td>Time taken for evaluation</td>
+                    <td class="stat-number" id="modalTotalTime">00:00:00</td>
+                  </tr>
+                  <tr>
+                    <td><i class="bi bi-file-earmark-text text-success me-2"></i>Total Sheets</td>
+                    <td>Answer sheets processed</td>
+                    <td class="stat-number" id="modalTotalSheets">0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Action Details Section -->
+          <div class="action-details-section mb-4">
+            <h6 class="summary-heading mb-3">
+              <i class="bi bi-list-check me-2"></i>Evaluation Details
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm align-middle mb-0" id="modal-questions-table">
+                <thead class="table-light">
+                  <tr>
+                    <th data-bs-toggle="tooltip" title="Page Number">Page</th>
+                    <th data-bs-toggle="tooltip" title="Question Number">Q. No</th>
+                    <th data-bs-toggle="tooltip" title="Obtained Marks / Total Marks for the Question">Tool</th>
+                    <th data-bs-toggle="tooltip" title="Attempted Status and Bonus">Marks/Text</th>
+                  </tr>
+                </thead>
+                <tbody id="modalQuestionsTableBody">
+                  <!-- Will be populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Confirmation Checkbox -->
+          <div class="confirmation-section">
+            <div class="alert alert-info modern-alert">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>Important:</strong> Please review all the above details before proceeding with submission.
+            </div>
+
+            <div class="form-check modern-checkbox-wrapper">
+              <input type="checkbox" class="form-check-input modern-checkbox" id="confirmCheckbox">
+              <label class="form-check-label modern-checkbox-label" for="confirmCheckbox">
+                <span class="checkbox-icon">✓</span>
+                I have reviewed all entries and confirm they are accurate and complete. I want to submit all changes.
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer modern-modal-footer">
+          <button type="button" class="btn btn-modern-cancel" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-2"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-modern-proceed" id="proceedBtn" disabled>
+            <i class="bi bi-check-circle me-2"></i>Proceed
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery and other libraries first -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Your scripts -->
+  <script src="{% static 'magnifier.js' %}?v=2025011302"></script>
+  <script src="{% static 'script.js' %}?v=2025011302"></script>
+  <script src="{% static 'content-validator.js' %}?v=2025011302"></script>
+
+  <!-- Image Gallery Toggle Function -->
+  <script>
+    // Timer Functionality
+    let timerInterval;
+    let startTime;
+    let elapsedTime = 0;
+    let isTimerRunning = false;
+
+    function startTimer() {
+      if (!isTimerRunning) {
+        startTime = Date.now() - elapsedTime;
+        timerInterval = setInterval(updateTimer, 1000);
+        isTimerRunning = true;
+      }
+    }
+
+    function stopTimer() {
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+      }
+    }
+
+    function resetTimer() {
+      stopTimer();
+      elapsedTime = 0;
+      document.getElementById('timerDisplay').textContent = '00:00:00';
+    }
+
+    function updateTimer() {
+      elapsedTime = Date.now() - startTime;
+      const totalSeconds = Math.floor(elapsedTime / 1000);
+
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      const formattedTime =
+        String(hours).padStart(2, '0') + ':' +
+        String(minutes).padStart(2, '0') + ':' +
+        String(seconds).padStart(2, '0');
+
+      document.getElementById('timerDisplay').textContent = formattedTime;
+    }
+
+    function getTotalTime() {
+      return document.getElementById('timerDisplay').textContent;
+    }
+
+    // Start timer when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+      startTimer();
+      updateStatistics(); // Initialize statistics on page load
+    });
+
+    // Custom Toast Notification Function
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = 'custom-toast';
+
+      // Set icon based on type
+      let iconClass = 'bi-check-circle-fill'; // success icon
+      let gradient = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'; // success gradient
+
+      if (type === 'error') {
+        iconClass = 'bi-x-circle-fill';
+        gradient = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+      } else if (type === 'warning') {
+        iconClass = 'bi-exclamation-triangle-fill';
+        gradient = 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)';
+      } else if (type === 'info') {
+        iconClass = 'bi-info-circle-fill';
+        gradient = 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)';
+      }
+
+      toast.style.background = gradient;
+
+      toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="bi ${iconClass}"></i>
+    </div>
+    <div class="toast-message">${message}</div>
+    <div class="toast-progress"></div>
+  `;
+
+      // Add to container
+      toastContainer.appendChild(toast);
+
+      // Trigger animation
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 100);
+
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+
+        // Remove from DOM after animation
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 400);
+      }, 3000);
+    }
+
+    function toggleImageGallery() {
+      console.log('=== TOGGLE GALLERY START ===');
+      console.log('Button clicked, checking modal state...');
+
+      try {
+        const imageGalleryModal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+
+        // Load images first
+        loadImageGalleryGrid();
+
+        // Show modal
+        imageGalleryModal.show();
+
+      } catch (error) {
+        console.error('Error toggling image gallery modal:', error);
+      }
+
+      console.log('=== TOGGLE GALLERY END ===');
+    }
+
+    function loadImageGalleryGrid() {
+      console.log('Loading image gallery grid...');
+      const imageGalleryGrid = $('#imageGalleryGrid');
+
+      if (!imageGalleryGrid.length) {
+        console.error('Image gallery grid container not found!');
+        return;
+      }
+
+      let gridHtml = '';
+
+      // Get all carousel items and create thumbnails
+      const carouselItems = $('.carousel-item');
+      console.log('Found carousel items:', carouselItems.length);
+
+      if (carouselItems.length === 0) {
+        gridHtml = '<div class="text-center text-muted">No images available</div>';
+      } else {
+        // Create grid layout with consistent sizing
+        gridHtml = '<div class="gallery-grid-container">';
+
+        carouselItems.each(function (index) {
+          const img = $(this).find('img').first();
+          const imgSrc = img.attr('src');
+          const pageNumber = index + 1;
+
+          gridHtml += `
+        <div class="gallery-item">
+          <div class="card shadow-sm border-0" onclick="if(event.target.type !== 'checkbox') viewFullImage('${imgSrc}', ${pageNumber})">
+            <div class="card-body h-100 p-0">
+              <div class="image-container">
+                <img src="${imgSrc}" alt="Page ${pageNumber}">
+              </div>
+              <div class="controls-container d-flex justify-content-between align-items-center mt-2">
+                <span class="badge bg-primary text-white">Page ${pageNumber}</span>
+                <div class="form-check m-0" onclick="event.stopPropagation()">
+                  <input class="form-check-input mark-for-blank" type="checkbox" data-index="${index}" id="img-${index}" onclick="event.stopPropagation()">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+        });
+
+        gridHtml += '</div>';
+      }
+
+      imageGalleryGrid.html(gridHtml);
+    }
+
+    // Select all images function
+    function selectAllImages() {
+      console.log('=== SELECT ALL IMAGES START ===');
+      try {
+        $('.mark-for-blank').prop('checked', true);
+        console.log('All checkboxes selected');
+      } catch (error) {
+        console.error('Error selecting all images:', error);
+      }
+      console.log('=== SELECT ALL IMAGES END ===');
+    }
+
+    // Clear all images function
+    function clearAllImages() {
+      console.log('=== CLEAR ALL IMAGES START ===');
+      try {
+        $('.mark-for-blank').prop('checked', false);
+        console.log('All checkboxes cleared');
+      } catch (error) {
+        console.error('Error clearing all images:', error);
+      }
+      console.log('=== CLEAR ALL IMAGES END ===');
+    }
+
+    // Save selected images function
+    function saveSelectedImages() {
+      console.log('=== SAVE SELECTED IMAGES START ===');
+
+      try {
+        const selectedImages = [];
+        $('.mark-for-blank:checked').each(function () {
+          const index = $(this).data('index');
+          const pageNumber = index + 1;
+          selectedImages.push({
+            index: index,
+            pageNumber: pageNumber,
+            marked: true
+          });
+        });
+
+        console.log('Selected images for blank marking:', selectedImages);
+
+        if (selectedImages.length === 0) {
+          showToast('No sheets selected for blank marking.', 'warning');
+          return;
+        }
+
+        // Close gallery modal
+        const galleryModal = bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal'));
+        if (galleryModal) {
+          galleryModal.hide();
+        }
+
+        // Add delay for each sheet processing by simulating main Mark Blank button click
+        let delay = 0;
+        selectedImages.forEach((image, i) => {
+          setTimeout(() => {
+            console.log(`Processing sheet ${image.pageNumber}...`);
+
+            // Navigate to page
+            goToSlide(image.index);
+
+            // Wait for navigation to complete, then simulate main Mark Blank button click
+            setTimeout(() => {
+              // Find and click the main Mark Blank button (simulate exact user action)
+              const markBlankBtn = $('[data-name="mark_blank"], .btn-mark-blank, [onclick*="mark_blank"]');
+              if (markBlankBtn.length > 0) {
+                markBlankBtn.first().click();
+                console.log('Clicked main Mark Blank button for sheet', image.pageNumber);
+              } else {
+                // Fallback: Trigger the main tool workflow directly
+                if (typeof selectedTool === 'function') {
+                  selectedTool('mark_blank');
+                }
+                if (typeof checkWithAIBeforeMarkBlank === 'function') {
+                  checkWithAIBeforeMarkBlank(image.index, () => {
+                    if (typeof performMarkBlank === 'function') {
+                      const tool = { name: 'mark_blank', label: 'Mark Blank' };
+                      performMarkBlank(image.index, tool);
+                    }
+                  });
+                }
+              }
+
+              if (i === selectedImages.length - 1) {
+                console.log('=== ALL SHEETS PROCESSED ===');
+                setTimeout(() => {
+                  showToast('Sheet blanked successfully', 'success');
+                }, 1000);
+              }
+            }, 500); // Wait for navigation to complete
+
+          }, delay);
+          delay += 2000; // 2 second delay between each sheet for smooth processing
+        });
+
+      } catch (error) {
+        console.error('Error saving selected images:', error);
+        showToast('Error occurred while saving selected sheets.', 'error');
+      }
+
+      updateStatistics(); // Update statistics after saving
+      console.log('=== SAVE SELECTED IMAGES END ===');
+    }
+
+    // View full image function
+    function viewFullImage(imgSrc, pageNumber) {
+      // Navigate to the page in main carousel
+      goToSlide(pageNumber - 1);
+
+      // Close the gallery modal
+      const galleryModal = bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal'));
+      if (galleryModal) {
+        galleryModal.hide();
+      }
+    }
+
+    // Gallery control button event listeners
+    $(document).ready(function () {
+      // Close gallery panel
+      $('#closeImageGalleryPanel').click(function () {
+        $('#imageGalleryPanel').slideUp(300);
+      });
+
+      // Select all images
+      $('#selectAllImages').click(function () {
+        $('.mark-for-blank').prop('checked', true);
+      });
+
+      // Clear all images
+      $('#clearAllImages').click(function () {
+        $('.mark-for-blank').prop('checked', false);
+      });
+
+      // Save selected images
+      $('#saveImages').click(function () {
+        const selectedImages = [];
+        $('.mark-for-blank:checked').each(function () {
+          selectedImages.push($(this).data('index'));
+        });
+
+        if (selectedImages.length > 0) {
+          console.log('Saving images:', selectedImages);
+          alert(`Saved ${selectedImages.length} images.`);
+          $('#imageGalleryPanel').slideUp(300);
+        } else {
+          alert('No images selected for saving.');
+        }
+      });
+    });
+  </script>
+
+  <!-- Custom 3D Checkbox Script -->
+  <script>
+    // Handle custom 3D checkbox flip animation
+    document.addEventListener('DOMContentLoaded', function () {
+      const cbx = document.getElementById('cbx');
+      if (cbx) {
+        cbx.addEventListener('change', function () {
+          const cbxLabel = this.closest('.cbx');
+          const flip = cbxLabel.querySelector('.flip');
+
+          if (this.checked) {
+            cbxLabel.style.borderColor = '#0b76ef';
+            flip.style.transform = 'rotateY(180deg)';
+          } else {
+            cbxLabel.style.borderColor = '#e8e8eb';
+            flip.style.transform = 'rotateY(0deg)';
+          }
+        });
+      }
+
+      // Update total sheets count
+      updateTotalSheetsCount();
+    });
+
+    // Function to update total sheets count
+    function updateTotalSheetsCount() {
+      const imagesData = document.getElementById('imagesData');
+      if (imagesData) {
+        const images = JSON.parse(imagesData.textContent);
+        const totalSheets = images.length;
+        const countElement = document.getElementById('totalSheetsCount');
+        if (countElement) {
+          countElement.textContent = totalSheets;
+        }
+      }
+    }
+
+    // Global storage for tool usage timestamps
+    const toolUsageTimestamps = new Map(); // Key: page-question, Value: timestamp
+
+    // Tool color mapping with labels
+    const toolColors = {
+      'add-marks': { color: '#FF6B6B', label: 'Add Marks' },
+      'mark-blank': { color: '#4ECDC4', label: 'Mark Blank' },
+      'cross-tool': { color: '#45B7D1', label: 'Cross Tool' },
+      'undo-tool': { color: '#96CEB4', label: 'Undo Tool' },
+      'highlighter': { color: '#FFEAA7', label: 'Highlighter' },
+      'eraser': { color: '#DDA0DD', label: 'Eraser' },
+      'seen': { color: '#FFA500', label: 'Seen' },
+      'mark-correct': { color: '#28A745', label: 'Mark Correct' },
+      'mark-incorrect': { color: '#DC3545', label: 'Mark Incorrect' },
+      'text-tool': { color: '#6C757D', label: 'Text Tool' },
+      'draw-box': { color: '#17A2B8', label: 'Draw Box' },
+      'pencil-tool': { color: '#343A40', label: 'Pencil Tool' }
+    };
+
+    // Function to generate tool legend (disabled - removed visual styling)
+    function generateToolLegend() {
+      // Function disabled - no longer generating tool legend
+      return;
+    }
+
+    // Track tools used per question
+    const questionTools = new Map(); // Key: questionId, Value: Set of tools
+
+    // Function to get tools used for a specific question
+    function getToolsForQuestion(questionId) {
+      const allSheets = paperSheet.getAll();
+      const tools = new Set();
+
+      for (const sheetName in allSheets) {
+        const sheetTools = allSheets[sheetName];
+        for (const tool of sheetTools) {
+          if (tool.question_id == questionId) {
+            tools.add(tool.tool);
+          }
+        }
+      }
+
+      return Array.from(tools);
+    }
+
+    // Function to generate CSS for multiple tools
+    function generateMultiToolCSS(tools) {
+      if (tools.length === 0) return '';
+
+      const colors = tools.map(tool => {
+        const toolInfo = toolColors[tool];
+        return toolInfo ? toolInfo.color : '#CCCCCC';
+      });
+
+      let css = '';
+
+      // Convert hex colors to rgba for proper transparency
+      const hexToRgba = (hex, alpha) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      };
+
+      // Generate CSS variables for the colors with proper rgba values
+      colors.forEach((color, index) => {
+        const rgbaColor = hexToRgba(color, '0.2');
+        css += `--tool-${index + 1}-color: ${rgbaColor};`;
+      });
+
+      return css;
+    }
+
+    // Function to apply tool colors to question rows (disabled - removed visual styling)
+    function applyToolColorsToQuestions() {
+      // Function disabled - no longer applying color backgrounds to question rows
+      return;
+    }
+
+    // Progress bar management for question cells
+    const questionProgressBars = new Map(); // Key: questionId, Value: progress data
+    let selectedQuestionId = null; // Track currently selected question
+    let currentActiveTool = null; // Track currently active tool for glowing effect
+
+    // Function to calculate mixed gradient with clear color partitions
+    function calculateMixedToolGradient(questionId) {
+      const toolColors = {
+        'add-marks': '#FF6B6B',
+        'mark-blank': '#4ECDC4',
+        'cross-tool': '#45B7D1',
+        'undo-tool': '#96CEB4',
+        'highlighter': '#FFEAA7',
+        'eraser': '#DDA0DD',
+        'seen': '#FFA500',
+        'mark-correct': '#28A745',
+        'mark-incorrect': '#DC3545',
+        'text-tool': '#6C757D',
+        'draw-box': '#17A2B8',
+        'draw-line': '#6F42C1',
+        'pencil-tool': '#343A40'
+      };
+
+      const questionTools = questionProgressBars.get(questionId) || {};
+      const usedTools = Object.keys(questionTools).filter(tool => questionTools[tool] > 0);
+
+      if (usedTools.length === 0) {
+        return 'rgba(0, 0, 0, 0.1)'; // Default background
+      }
+
+      if (usedTools.length === 1) {
+        // Single tool - use its solid color
+        const color = toolColors[usedTools[0]];
+        return `${color}`; // Solid color, no gradient
+      }
+
+      // Multiple tools - create clear partitions (conic gradient for distinct sections)
+      const colors = usedTools.map(tool => toolColors[tool]);
+      const sectionSize = 100 / colors.length;
+
+      // Create hard stops for clear partitions
+      const gradientStops = [];
+      colors.forEach((color, index) => {
+        const startPos = index * sectionSize;
+        const endPos = (index + 1) * sectionSize;
+
+        if (index === 0) {
+          gradientStops.push(`${color} 0%`);
+          gradientStops.push(`${color} ${endPos}%`);
+        } else if (index === colors.length - 1) {
+          gradientStops.push(`${color} ${startPos}%`);
+          gradientStops.push(`${color} 100%`);
+        } else {
+          gradientStops.push(`${color} ${startPos}%`);
+          gradientStops.push(`${color} ${endPos}%`);
+        }
+      });
+
+      return `linear-gradient(90deg, ${gradientStops.join(', ')})`;
+    }
+
+    // Function to create progress bar with mixed tool colors
+    function createProgressBar(questionId) {
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'question-progress-container';
+
+      const progressBar = document.createElement('div');
+      progressBar.className = 'question-progress-bar';
+      progressBar.style.width = '0%';
+
+      progressContainer.appendChild(progressBar);
+      return progressContainer;
+    }
+
+    // Function to update progress bar with 7-tool rule
+    function updateProgressBarWithDynamicColors(questionId) {
+      const progressBar = document.getElementById(`progress-bar-${questionId}`);
+      if (!progressBar) return;
+
+      const questionTools = questionProgressBars.get(questionId) || {};
+      const usedToolsCount = Object.keys(questionTools).filter(tool => questionTools[tool] > 0).length;
+
+      // Clear existing content
+      progressBar.innerHTML = '';
+
+      // 7-Tool Rule: Each tool = 14.28% of progress
+      const TOOL_PERCENTAGE = 100 / 7; // ~14.28%
+      const totalProgress = Math.max(5, usedToolsCount * TOOL_PERCENTAGE); // Start at 5% minimum
+
+      if (usedToolsCount === 0) {
+        progressBar.style.background = 'rgba(0, 0, 0, 0.1)';
+        progressBar.style.animation = 'none';
+        return;
+      }
+
+      const toolColors = {
+        'add-marks': '#FF6B6B',
+        'mark-blank': '#4ECDC4',
+        'cross-tool': '#45B7D1',
+        'undo-tool': '#96CEB4',
+        'highlighter': '#FFEAA7',
+        'eraser': '#DDA0DD',
+        'seen': '#FFA500',
+        'mark-correct': '#28A745',
+        'mark-incorrect': '#DC3545',
+        'text-tool': '#6C757D',
+        'draw-box': '#17A2B8',
+        'draw-line': '#6F42C1',
+        'pencil-tool': '#343A40'
+      };
+
+      const toolNames = {
+        'add-marks': 'Add Marks',
+        'mark-blank': 'Mark Blank',
+        'cross-tool': 'Cross Tool',
+        'undo-tool': 'Undo Tool',
+        'highlighter': 'Highlighter',
+        'eraser': 'Eraser',
+        'seen': 'Seen',
+        'mark-correct': 'Mark Correct',
+        'mark-incorrect': 'Mark Incorrect',
+        'text-tool': 'Text Tool',
+        'draw-box': 'Draw Box',
+        'draw-line': 'Draw Line',
+        'pencil-tool': 'Pencil Tool'
+      };
+
+      // Get used tools in order of first usage (oldest first for left-to-right animation)
+      const usedTools = Object.keys(questionTools)
+        .filter(tool => questionTools[tool] > 0)
+        .sort((a, b) => questionTools[a] - questionTools[b]); // Oldest first (normal order)
+
+      // Create color segments with forward-moving animation (newest on right)
+      let currentPercentage = 0;
+      usedTools.forEach((tool, index) => {
+        const segmentPercentage = Math.min(TOOL_PERCENTAGE, totalProgress - currentPercentage);
+
+        if (segmentPercentage > 0) {
+          const segment = document.createElement('div');
+          segment.className = 'tool-segment';
+          segment.style.backgroundColor = toolColors[tool];
+          segment.style.width = `${segmentPercentage}%`;
+          segment.style.left = `${currentPercentage}%`;
+          segment.style.position = 'absolute';
+          segment.style.top = '0';
+          segment.style.height = '100%';
+          segment.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+          segment.style.transform = 'translateZ(0)';
+          segment.style.cursor = 'pointer'; // Show pointer cursor on hover
+
+          // Add slide-in animation for new segments (from left)
+          if (index === usedTools.length - 1) { // Newest tool (rightmost)
+            segment.style.animation = 'slideInFromLeft 0.6s ease-out';
+          }
+
+          // Add tooltip attributes
+          segment.setAttribute('data-tool', tool);
+          segment.setAttribute('data-tool-name', toolNames[tool]);
+          segment.setAttribute('data-percentage', `${segmentPercentage.toFixed(1)}%`);
+          segment.title = `${toolNames[tool]} (${segmentPercentage.toFixed(1)}%)`;
+
+          // Add hover events for better tooltip display
+          segment.addEventListener('mouseenter', function (e) {
+            showTooltip(e, toolNames[tool], segmentPercentage.toFixed(1));
+          });
+
+          segment.addEventListener('mouseleave', function () {
+            hideTooltip();
+          });
+
+          // Apply glowing effect if this is the currently active tool
+          if (currentActiveTool === tool) {
+            segment.classList.add('active');
+          }
+
+          // Add subtle border between segments
+          if (index > 0) {
+            segment.style.borderLeft = '1px solid rgba(255, 255, 255, 0.3)';
+          }
+
+          progressBar.appendChild(segment);
+          currentPercentage += segmentPercentage;
+        }
+      });
+
+      // Add percentage display in the center of the progress bar
+      const percentageDisplay = document.createElement('div');
+      percentageDisplay.className = 'progress-percentage-display';
+      percentageDisplay.textContent = `${Math.round(totalProgress)}%`;
+      percentageDisplay.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: black;
+      font-weight: bold;
+      font-size: 10px;
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+      pointer-events: none;
+      z-index: 10;
+    `;
+      progressBar.appendChild(percentageDisplay);
+
+      // Apply enhanced forward-moving animated stripe effect
+      if (usedTools.length > 0) {
+        // Create diagonal stripe pattern that moves from left to right
+        const stripePattern = `repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.15) 10px,
+        rgba(255, 255, 255, 0.15) 20px
+      )`;
+
+        progressBar.style.background = stripePattern;
+        progressBar.style.backgroundSize = '40px 40px';
+        progressBar.style.animation = 'forwardStripe 1.5s linear infinite';
+
+        // Add overlay gradient for depth
+        const overlayGradient = `linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.1) 0%,
+        transparent 20%,
+        transparent 80%,
+        rgba(0, 0, 0, 0.1) 100%
+      )`;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: ${overlayGradient};
+        pointer-events: none;
+        z-index: 5;
+      `;
+        progressBar.appendChild(overlay);
+      }
+
+      // Ensure proper stacking
+      progressBar.style.position = 'relative';
+      progressBar.style.overflow = 'hidden';
+    }
+
+    // Tooltip functions
+    function showTooltip(event, toolName, percentage) {
+      // Remove existing tooltip
+      hideTooltip();
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'progress-tooltip';
+      tooltip.innerHTML = `
+      <strong>${toolName}</strong><br>
+      <small>${percentage}% of progress</small>
+    `;
+      tooltip.style.cssText = `
+      position: fixed;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 10000;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 200px;
+    `;
+
+      document.body.appendChild(tooltip);
+
+      // Position tooltip
+      const rect = event.target.getBoundingClientRect();
+      tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
+      tooltip.style.top = rect.top - tooltip.offsetHeight - 8 + 'px';
+
+      // Add fade-in effect
+      tooltip.style.opacity = '0';
+      tooltip.style.transition = 'opacity 0.2s ease-in-out';
+      setTimeout(() => {
+        tooltip.style.opacity = '1';
+      }, 10);
+    }
+
+    function hideTooltip() {
+      const existingTooltip = document.querySelector('.progress-tooltip');
+      if (existingTooltip) {
+        existingTooltip.remove();
+      }
+    }
+
+    // Function to update active tool and refresh glowing effects
+    function updateActiveTool(toolName) {
+      currentActiveTool = toolName;
+
+      // Refresh all progress bars to update glowing effects
+      questionProgressBars.forEach((progressData, questionId) => {
+        updateProgressBarWithDynamicColors(questionId);
+      });
+    }
+
+    // Function to clear active tool (when no tool is selected)
+    function clearActiveTool() {
+      currentActiveTool = null;
+
+      // Refresh all progress bars to remove glowing effects
+      questionProgressBars.forEach((progressData, questionId) => {
+        updateProgressBarWithDynamicColors(questionId);
+      });
+    }
+
+
+    // Function to add progress bar to question cell
+    function addProgressBarToQuestionCell(questionId, toolName, progress = 0) {
+      const questionRows = document.querySelectorAll('#questions-table tbody tr');
+
+      questionRows.forEach((row, index) => {
+        const question = questions[index];
+        if (!question || question.id !== questionId) return;
+
+        const questionCell = row.querySelector('td:nth-child(2)'); // Question column
+        if (!questionCell) return;
+
+        // Add question-cell class if not present
+        if (!questionCell.classList.contains('question-cell')) {
+          questionCell.classList.add('question-cell');
+        }
+
+        // Wrap question text if not already wrapped
+        const questionText = questionCell.textContent.trim();
+        if (!questionCell.querySelector('.question-text')) {
+          questionCell.innerHTML = `<span class="question-text">${questionText}</span>`;
+        }
+
+        // Find or create progress bar container
+        let progressContainer = questionCell.querySelector('.question-progress-container');
+        if (!progressContainer) {
+          progressContainer = createProgressBar(questionId);
+          progressContainer.id = `progress-bar-${questionId}`; // Add ID for updates
+          questionCell.appendChild(progressContainer);
+        }
+
+        // Store progress data
+        if (!questionProgressBars.has(questionId)) {
+          questionProgressBars.set(questionId, {});
+        }
+        questionProgressBars.get(questionId)[toolName] = progress;
+
+        // Update progress bar with dynamic color mixing
+        updateProgressBarWithDynamicColors(questionId);
+      });
+    }
+
+    // Function to update progress bar based on tool usage
+    function updateQuestionProgress(questionId, toolName, isActive) {
+      // Allow progress updates even if no question is explicitly selected
+      // This ensures progress bars show when tools are used directly on canvas
+      if (selectedQuestionId && selectedQuestionId !== questionId) {
+        console.log(`Question ${questionId} not selected, but updating anyway for canvas tool usage`);
+        // Don't return - allow the update to proceed
+      }
+
+      // Initialize progress data for this question if not exists
+      if (!questionProgressBars.has(questionId)) {
+        questionProgressBars.set(questionId, {});
+      }
+
+      const currentProgress = questionProgressBars.get(questionId) || {};
+      const toolProgress = currentProgress[toolName] || 0;
+
+      if (isActive) {
+        // Add tool usage (increment) - only if not already used
+        if (toolProgress === 0) {
+          // Find the next available position (sequential)
+          const usedTools = Object.keys(currentProgress).filter(tool => currentProgress[tool] > 0);
+          const newPosition = usedTools.length + 1; // Next sequential position
+          currentProgress[toolName] = newPosition;
+
+          console.log(`Added tool ${toolName} at position ${newPosition} for question ${questionId}`);
+        } else {
+          console.log(`Tool ${toolName} already exists for question ${questionId} at position ${toolProgress}`);
+        }
+
+        // Update the progress bar display with colors
+        addProgressBarToQuestionCell(questionId, toolName, currentProgress[toolName]);
+      } else {
+        // Remove tool usage (decrement)
+        if (toolProgress > 0) {
+          // Remove the tool from progress data
+          delete currentProgress[toolName];
+
+          // Reassign sequential positions to remaining tools
+          const remainingTools = Object.keys(currentProgress).filter(tool => currentProgress[tool] > 0);
+          remainingTools.sort((a, b) => currentProgress[a] - currentProgress[b]); // Sort by current position
+
+          // Reassign positions 1, 2, 3... to remaining tools
+          remainingTools.forEach((tool, index) => {
+            currentProgress[tool] = index + 1;
+          });
+
+          console.log(`Removed tool ${toolName} and reordered remaining tools for question ${questionId}`);
+
+          // Refresh the progress bar to reflect the change
+          updateProgressBarWithDynamicColors(questionId);
+        } else {
+          console.log(`Tool ${toolName} not found in progress for question ${questionId}`);
+        }
+      }
+    }
+
+    // Function to update progress bar when tool is used on canvas
+    function updateProgressFromCanvas(questionId, toolName) {
+      // Calculate progress based on tool usage for this question
+      const currentProgress = questionProgressBars.get(questionId) || {};
+      const toolProgress = currentProgress[toolName] || 0;
+
+      // Increase progress by 25% for each tool usage
+      const newProgress = Math.min(toolProgress + 25, 100);
+      addProgressBarToQuestionCell(questionId, toolName, newProgress);
+      questionProgressBars.get(questionId)[toolName] = newProgress;
+
+      console.log(`Canvas tool ${toolName} used for question ${questionId}: ${newProgress}%`);
+    }
+
+    // Function to initialize progress bars for all questions
+    function initializeQuestionProgressBars() {
+      const questionRows = document.querySelectorAll('#questions-table tbody tr');
+
+      questionRows.forEach((row, index) => {
+        const question = questions[index];
+        if (!question) return;
+
+        const questionCell = row.querySelector('td:nth-child(2)');
+        if (!questionCell) return;
+
+        // Add question-cell class for styling
+        if (!questionCell.classList.contains('question-cell')) {
+          questionCell.classList.add('question-cell');
+        }
+
+        // Wrap question text if not already wrapped
+        const questionText = questionCell.textContent.trim();
+        if (!questionCell.querySelector('.question-text')) {
+          questionCell.innerHTML = `<span class="question-text">${questionText}</span>`;
+        }
+      });
+    }
+
+    // Function to connect progress bars to Select buttons inside question rows
+    function connectProgressBarsToTools() {
+      // Wait for DOM to be ready and question table to be populated
+      setTimeout(() => {
+        const selectButtons = document.querySelectorAll('.select-question');
+
+        selectButtons.forEach(button => {
+          const questionId = button.getAttribute('data-id');
+          if (!questionId) return;
+
+          // Add click event listener to track Select button usage
+          button.addEventListener('click', function () {
+            console.log(`Select button clicked for question ${questionId}`);
+
+            // Set this as the currently selected question
+            selectedQuestionId = questionId;
+
+            // Highlight selected question row
+            document.querySelectorAll('#questions-table tbody tr').forEach(row => {
+              row.classList.remove('selected');
+            });
+            const selectedRow = button.closest('tr');
+            if (selectedRow) {
+              selectedRow.classList.add('selected');
+            }
+
+            console.log(`Question ${questionId} is now selected for progress tracking`);
+          });
+        });
+
+        // Connect tool buttons to update progress for selected question
+        const toolButtons = document.querySelectorAll('.btn-tool');
+
+        toolButtons.forEach(button => {
+          const toolName = button.getAttribute('data-name');
+          if (!toolName) return;
+
+          // Define which tools should trigger progress bars (only Select button tools)
+          const progressEnabledTools = [
+            'add-marks',
+            'mark-correct',
+            'mark-incorrect',
+            'pencil-tool',
+            'text-tool',
+            'draw-line',
+            'draw-box'
+          ];
+
+          // Only add progress bar functionality to inside tools
+          if (progressEnabledTools.includes(toolName)) {
+            // Add click event listener to track tool usage
+            button.addEventListener('click', function () {
+              // Only update progress if a question is selected
+              if (selectedQuestionId) {
+                console.log(`Progress tool ${toolName} used for selected question ${selectedQuestionId}`);
+                updateQuestionProgress(selectedQuestionId, toolName, true);
+              } else {
+                console.log('No question selected - please select a question first');
+              }
+            });
+          }
+        });
+      }, 3000); // Wait 3 seconds for question table to populate
+    }
+
+    // Function to get current question (enhanced to work with existing system)
+    function getCurrentQuestion() {
+      // Try to get current question from multiple sources
+      let currentQuestion = null;
+
+      // Method 1: Check if there's a selected row in the questions table
+      const selectedRow = document.querySelector('#questions-table tbody tr.selected, #questions-table tbody tr.active');
+      if (selectedRow) {
+        const questionCells = selectedRow.querySelectorAll('td');
+        if (questionCells.length > 0) {
+          const questionText = questionCells[1].textContent.trim(); // Question column
+          // Find matching question from questions array
+          currentQuestion = questions.find(q => q.text === questionText || q.question === questionText);
+        }
+      }
+
+      // Method 2: Check current page/slide context
+      if (!currentQuestion) {
+        const activeSlide = document.querySelector('.carousel-item.active');
+        if (activeSlide) {
+          const slideIndex = Array.from(activeSlide.parentNode.children).indexOf(activeSlide);
+          // Try to find question related to current page
+          if (questions && questions.length > slideIndex) {
+            currentQuestion = questions[slideIndex];
+          }
+        }
+      }
+
+      // Method 3: Fallback to first question
+      if (!currentQuestion && questions && questions.length > 0) {
+        currentQuestion = questions[0];
+      }
+
+      return currentQuestion;
+    }
+
+    // Enhanced function to connect progress bars to tools with better question detection
+    function connectProgressBarsToToolsEnhanced() {
+      const toolButtons = document.querySelectorAll('.btn-tool');
+
+      toolButtons.forEach(button => {
+        const toolName = button.getAttribute('data-name');
+        if (!toolName) return;
+
+        // Add click event listener to track tool usage
+        button.addEventListener('click', function () {
+          // Get current question with enhanced detection
+          const currentQuestion = getCurrentQuestion();
+          if (currentQuestion) {
+            console.log(`Tool ${toolName} used for question ${currentQuestion.id}`);
+            updateQuestionProgress(currentQuestion.id, toolName, true);
+
+            // Also update progress based on existing tool usage data
+            const existingTools = getToolsForQuestion(currentQuestion.id);
+            existingTools.forEach(tool => {
+              if (tool !== toolName) {
+                updateQuestionProgress(currentQuestion.id, tool, false);
+              }
+            });
+          }
+        });
+      });
+    }
+
+    // Function to sync progress bars with existing tool usage
+    function syncProgressBarsWithExistingTools() {
+      questions.forEach((question, index) => {
+        if (!question) return;
+
+        const usedTools = getToolsForQuestion(question.id);
+        usedTools.forEach(toolName => {
+          // Set progress to 100% for tools that have been used
+          addProgressBarToQuestionCell(question.id, toolName, 100);
+        });
+      });
+    }
+
+    // Function to record tool usage timestamp
+    function recordToolUsage(pageNum, questionNum, toolUsed, marksGiven) {
+      const key = `${pageNum}-${questionNum}`;
+      const timestamp = new Date();
+      toolUsageTimestamps.set(key, {
+        pageNumber: pageNum,
+        questionNumber: questionNum,
+        toolUsed: toolUsed,
+        marksGiven: marksGiven,
+        timestamp: timestamp,
+        timestampString: timestamp.toLocaleString()
+      });
+
+      // Trigger Real-Time Save for Marks/Tools
+      saveRealTimeAction({
+        tool: toolUsed,
+        page: pageNum,
+        question_no: questionNum,
+        marks: marksGiven,
+        // We need question ID to save specific result. 
+        // Assuming 'questions' array is available globally, we can find it.
+        // But recordToolUsage only gets numbers.
+        // Let's try to pass question_id if we can change call sites, 
+        // OR lookup from global questions array
+      });
+
+      // Lookup question ID
+      if (typeof questions !== 'undefined') {
+        const q = questions.find(q => q.question_no == questionNum);
+        if (q) {
+          saveRealTimeAction({
+            tool: toolUsed,
+            page: pageNum,
+            question_no: questionNum,
+            question_id: q.id,
+            marks: marksGiven,
+            max_marks: q.marks,
+            question_text: q.question
+          });
+        }
+      }
+    }
+
+    // Visual Row Coloring System - Safe Integration Function
+    function updateRowColor(questionId, toolName) {
+      // Find the specific row in tbody that matches the questionId
+      const questionRows = document.querySelectorAll('#questions-table tbody tr');
+      let targetRow = null;
+
+      questionRows.forEach((row, index) => {
+        const selectButton = row.querySelector('.select-question');
+        if (selectButton && selectButton.getAttribute('data-id') === questionId.toString()) {
+          targetRow = row;
+        }
+      });
+
+      if (!targetRow) {
+        console.warn(`Row not found for questionId: ${questionId}`);
+        return;
+      }
+
+      // Priority Check ("The Green Lock")
+      if (toolName === 'mark-correct' && targetRow.classList.contains('row-green')) {
+        // Green is finalized and cannot be overwritten by mark-correct
+        console.log('Green lock activated - skipping color update');
+        return;
+      }
+
+      // Remove old status classes
+      targetRow.classList.remove('row-green', 'row-red', 'row-orange');
+
+      // Apply new color based on tool and save to global state
+      let colorClass = null;
+      if (toolName === 'add-marks') {
+        colorClass = 'row-green';
+        targetRow.classList.add('row-green');
+      } else if (toolName === 'mark-correct') {
+        colorClass = 'row-orange';
+        targetRow.classList.add('row-orange');
+      } else if (toolName === 'mark-incorrect') {
+        colorClass = 'row-red';
+        targetRow.classList.add('row-red');
+      }
+
+      // Save the color state for persistence
+      if (colorClass) {
+        window.questionRowState[questionId] = colorClass;
+        console.log(`Saved color state: Question ${questionId} -> ${colorClass}`);
+      }
+    }
+
+    // Initialize global row state storage
+    window.questionRowState = {};
+    window.rowVisualState = {};
+
+    // Phase 4: Color Update Trigger - setupCanvasDrawingListener Function
+    function setupCanvasDrawingListener() {
+      // Wait for canvases to be available
+      setTimeout(() => {
+        const canvases = document.querySelectorAll('canvas');
+        canvases.forEach((canvas, index) => {
+
+          // Set up MutationObserver on canvas elements
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'attributes' && mutation.attributeName === 'data-drawing-complete') {
+
+                // Trigger: When observer detects canvas.dataset.drawingComplete changes to 'true'
+                // AND window.activeTool is set
+                if (canvas.dataset.drawingComplete === 'true' && window.activeTool && window.activeQuestion) {
+
+                  // Call updateRowColor with active question and tool
+                  updateRowColor(window.activeQuestion.id, window.activeTool);
+
+                  // Update visual state tracking
+                  window.rowVisualState[window.activeQuestion.id] = {
+                    tool: window.activeTool,
+                    timestamp: Date.now(),
+                    canvasIndex: index
+                  };
+
+                  console.log(`Phase 4 Triggered: Tool ${window.activeTool} for Question ${window.activeQuestion.id}`);
+
+                  // Get current Page Sheet Data for saving
+                  const paperSheetData = (window.paperSheet && window.paperSheet[`Page ${index + 1}`]) ? window.paperSheet[`Page ${index + 1}`] : [];
+
+                  // Trigger Real-Time Save for Canvas Drawings
+                  saveRealTimeAction({
+                    tool: window.activeTool,
+                    page: index + 1, // Canvas index is 0-based, page is 1-based
+                    question_id: window.activeQuestion.id, // Linked question
+                    question_no: window.activeQuestion.question_no,
+                    sheet_data: paperSheetData // Save the geometry
+                  });
+
+                  // Reset canvas.dataset.drawingComplete to 'false'
+                  canvas.dataset.drawingComplete = 'false';
+                }
+              }
+            });
+          });
+
+          // Start observing the canvas for attribute changes
+          observer.observe(canvas, {
+            attributes: true,
+            attributeFilter: ['data-drawing-complete']
+          });
+
+          console.log(`Phase 4: MutationObserver setup for canvas ${index}`);
+        });
+      }, 1000); // Wait 1 second for canvases to be available
+    }
+
+    // Enhanced updateRowColor function with state management
+    function updateRowColorAndState(questionId, toolName) {
+      updateRowColor(questionId, toolName);
+      window.rowVisualState[questionId] = {
+        tool: toolName,
+        timestamp: Date.now()
+      };
+    }
+
+    // DEBUGGING VERSION: applyRowColors function with console logging
+    function applyRowColors() {
+      console.log("Applying colors. Total states saved:", Object.keys(window.questionRowState).length);
+
+      // Loop through all saved question states
+      for (const [questionId, colorClass] of Object.entries(window.questionRowState)) {
+        // Find the row for this question
+        const questionRows = document.querySelectorAll('#questions-table tbody tr');
+        let targetRow = null;
+
+        questionRows.forEach((row) => {
+          const selectButton = row.querySelector('.select-question');
+          if (selectButton && selectButton.getAttribute('data-id') === questionId.toString()) {
+            targetRow = row;
+          }
+        });
+
+        console.log("Targeting Question ID:", questionId, "Found Row:", targetRow ? "YES" : "NO");
+
+        if (targetRow) {
+          // Remove existing color classes
+          targetRow.classList.remove('row-green', 'row-red', 'row-orange');
+          // Apply the saved color
+          if (colorClass) {
+            targetRow.classList.add(colorClass);
+          }
+        }
+      }
+    }
+
+    // Function to reapply all row colors (alias for applyRowColors)
+    function reapplyAllRowColors() {
+      applyRowColors();
+    }
+
+    // Function to update entries table with all tool usage
+    function updateEntriesTable() {
+      const entriesTableBody = document.getElementById('entriesTableBody');
+      if (!entriesTableBody) return;
+
+      entriesTableBody.innerHTML = ''; // Clear existing entries
+
+      // Get all rows from the sheet questions table
+      const tableBody = document.querySelector('#sheet-questions-table tbody');
+      if (!tableBody) return;
+
+      const rows = tableBody.querySelectorAll('tr');
+      const entries = [];
+
+      // Collect all entries from each row
+      rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+          let pageNum = cells[0].textContent.trim();
+          const questionNum = cells[1].textContent.trim();
+          const toolCell = cells[2]; // Tool column
+          const marksCell = cells[3]; // Marks/Text column
+
+          // Clean page number - remove "Page " prefix if present
+          if (pageNum.startsWith('Page ')) {
+            pageNum = pageNum.replace('Page ', '');
+          }
+
+          // Extract tool information
+          let toolUsed = 'N/A';
+          let marksGiven = '0';
+
+          if (toolCell) {
+            const toolText = toolCell.textContent.trim();
+            if (toolText && toolText !== '') {
+              toolUsed = toolText;
+            }
+          }
+
+          if (marksCell) {
+            const marksText = marksCell.textContent.trim();
+            if (marksText && marksText !== '' && marksText !== '0') {
+              marksGiven = marksText;
+            }
+          }
+
+          // Only add entries that have actual tool usage or marks
+          if (toolUsed !== 'N/A' || marksGiven !== '0') {
+            const key = `${pageNum}-${questionNum}`;
+            let timestamp = new Date().toLocaleString(); // Fallback timestamp
+
+            // Try to get the actual recorded timestamp
+            const recordedUsage = toolUsageTimestamps.get(key);
+            if (recordedUsage) {
+              timestamp = recordedUsage.timestampString;
+            }
+
+            entries.push({
+              pageNumber: pageNum,
+              questionNumber: questionNum,
+              marksGiven: marksGiven,
+              toolUsed: toolUsed,
+              timestamp: timestamp
+            });
+
+            // If we don't have a recorded timestamp and this is new usage, record it
+            if (!recordedUsage && (toolUsed !== 'N/A' || marksGiven !== '0')) {
+              recordToolUsage(pageNum, questionNum, toolUsed, marksGiven);
+            }
+          }
+        }
+      });
+
+      // Sort entries by page number, then by question number
+      entries.sort((a, b) => {
+        const pageCompare = parseInt(a.pageNumber) - parseInt(b.pageNumber);
+        if (pageCompare !== 0) return pageCompare;
+        return parseInt(a.questionNumber) - parseInt(b.questionNumber);
+      });
+
+      // Populate the table
+      entries.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+        <td>${entry.pageNumber}</td>
+        <td>${entry.questionNumber}</td>
+        <td>${entry.marksGiven}</td>
+        <td>${entry.toolUsed}</td>
+        <td>${entry.timestamp}</td>
+      `;
+        entriesTableBody.appendChild(row);
+      });
+
+      // Update entries count in modal if available
+      const entriesCount = document.getElementById('entriesCount');
+      if (entriesCount) {
+        entriesCount.textContent = entries.length;
+      }
+    }
+
+    // Function to update statistics container
+    function updateStatistics() {
+      const totalQuestionsElement = document.getElementById('totalQuestionsCount');
+      const totalMarksElement = document.getElementById('totalMarksScore');
+      const progressElement = document.getElementById('progressPercentage');
+
+      if (!totalQuestionsElement || !totalMarksElement || !progressElement) return;
+
+      // Get total questions from the questions array or table
+      let totalQuestions = 0;
+      if (typeof questions !== 'undefined' && questions.length > 0) {
+        totalQuestions = questions.length;
+      } else {
+        // Fallback: count rows in the questions table
+        const questionRows = document.querySelectorAll('#questions-table tbody tr');
+        totalQuestions = questionRows.length;
+      }
+
+      // Calculate total marks from the sheet questions table
+      let totalMarks = 0;
+      let evaluatedQuestions = 0;
+
+      const sheetRows = document.querySelectorAll('#sheet-questions-table tbody tr');
+      sheetRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+          const marksCell = cells[3]; // Marks/Text column
+          if (marksCell) {
+            const marksText = marksCell.textContent.trim();
+            // Extract marks from text like "5/10" or just "5"
+            const marksMatch = marksText.match(/(\d+)/);
+            if (marksMatch) {
+              totalMarks += parseInt(marksMatch[1]);
+              evaluatedQuestions++;
+            }
+          }
+        }
+      });
+
+      // Calculate progress percentage
+      const progressPercentage = totalQuestions > 0 ? Math.round((evaluatedQuestions / totalQuestions) * 100) : 0;
+
+      // Update the display with animation
+      animateValue(totalQuestionsElement, parseInt(totalQuestionsElement.textContent) || 0, totalQuestions, 500);
+      animateValue(totalMarksElement, parseInt(totalMarksElement.textContent) || 0, totalMarks, 500);
+      animateValue(progressElement, parseInt(progressElement.textContent) || 0, progressPercentage, 500, '%');
+
+      // Update colors based on progress
+      const progressIndicator = document.querySelector('.progress-indicator');
+      if (progressIndicator) {
+        if (progressPercentage === 100) {
+          progressIndicator.querySelector('.stat-icon').style.background = 'rgba(34, 197, 94, 0.3)';
+        } else if (progressPercentage >= 50) {
+          progressIndicator.querySelector('.stat-icon').style.background = 'rgba(251, 191, 36, 0.3)';
+        } else {
+          progressIndicator.querySelector('.stat-icon').style.background = 'rgba(59, 130, 246, 0.3)';
+        }
+      }
+    }
+
+    // Helper function to animate number changes
+    function animateValue(element, start, end, duration, suffix = '') {
+      const range = end - start;
+      const increment = range / (duration / 16);
+      let current = start;
+
+      const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+          current = end;
+          clearInterval(timer);
+        }
+        element.textContent = Math.round(current) + suffix;
+      }, 16);
+    }
+
+    // Initialize canvas drawing listener for proper color grading
+    document.addEventListener('DOMContentLoaded', function () {
+      setupCanvasDrawingListener();
+    });
+
+    // Update sheets count when modal is shown
+    document.addEventListener('DOMContentLoaded', function () {
+      const submitModal = document.getElementById('submitEntriesModal');
+      if (submitModal) {
+        submitModal.addEventListener('show.bs.modal', function () {
+          updateTotalSheetsCount();
+          updateEntriesTable(); // Update entries table when modal opens
+          updateStatistics(); // Update statistics when modal opens
+          updateSubmitModalStatus(); // Update incomplete evaluation status
+          // Update total time from main timer
+          const mainTimer = document.getElementById('timerDisplay');
+          const modalTimer = document.getElementById('totalTimeTaken');
+          if (mainTimer && modalTimer) {
+            modalTimer.textContent = mainTimer.textContent;
+          }
+        });
+
+        // Handle modal close - uncheck checkbox and disable submit button
+        submitModal.addEventListener('hide.bs.modal', function () {
+          const cbx = document.getElementById('cbx');
+          const submitBtn = document.getElementById('submitLockBtn');
+
+          if (cbx) {
+            cbx.checked = false;
+            // Reset checkbox visual state
+            const cbxLabel = cbx.closest('.cbx');
+            const flip = cbxLabel.querySelector('.flip');
+            if (cbxLabel) {
+              cbxLabel.style.borderColor = '#e8e8eb';
+            }
+            if (flip) {
+              flip.style.transform = 'rotateY(0deg)';
+            }
+          }
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submit and Lock';
+          }
+        });
+      }
+    });
+
+    // Submit button event handler in modal
+    const submitLockBtn = document.getElementById('submitLockBtn');
+    if (submitLockBtn) {
+      submitLockBtn.addEventListener('click', function () {
+        // Only check for unattempted questions (pages requirement removed)
+        const unattemptedQuestions = getUnattemptedQuestions();
+
+        // Allow submission even if there are unattempted questions (requirement removed)
+        proceedWithSubmission();
+      });
+    }
+
+    // Function to generate protected PDF and CSV
+    function generateProtectedFiles() {
+      const entriesTableBody = document.getElementById('entriesTableBody');
+      if (!entriesTableBody) return null;
+
+      // Collect all entries data
+      const entries = [];
+      const rows = entriesTableBody.querySelectorAll('tr');
+
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 5) {
+          entries.push({
+            pageNumber: cells[0].textContent,
+            questionNumber: cells[1].textContent,
+            marksGiven: cells[2].textContent,
+            toolsUsed: cells[3].textContent,
+            timestamp: cells[4].textContent
+          });
+        }
+      });
+
+      return entries;
+    }
+
+    // Function to submit and lock with simplified validation (pages requirement removed)
+    function submitAndLock() {
+      // Only check for unattempted questions for display purposes (pages requirement removed)
+      const unattemptedQuestions = getUnattemptedQuestions();
+
+      // Always proceed with submission - no blocking requirements
+      proceedWithSubmission();
+    }
+
+    // Global variable to track the incomplete evaluation popup
+    let incompleteEvaluationPopup = null;
+
+    // Function to get unattempted questions (real-time check)
+    function getUnattemptedQuestions() {
+      const unattemptedQuestions = [];
+      const questions = window.questions || [];
+
+      // Get all tool usage data from paperSheet
+      const allSheets = paperSheet.getAll();
+      const attemptedQuestions = new Set();
+
+      // Collect all questions that have tools applied
+      for (const sheetName in allSheets) {
+        const sheetTools = allSheets[sheetName];
+        for (const tool of sheetTools) {
+          if (tool.question_id) {
+            attemptedQuestions.add(tool.question_id);
+          }
+        }
+      }
+
+      // Find questions that haven't been attempted
+      questions.forEach(question => {
+        if (!attemptedQuestions.has(question.id)) {
+          unattemptedQuestions.push(question.question_no);
+        }
+      });
+
+      return unattemptedQuestions;
+    }
+
+    // Function to get pages that need marking (blank pages without Mark Blank tool)
+    function getPagesNeedingMarking() {
+      const pagesNeedingMarking = [];
+      const allSheets = paperSheet.getAll();
+
+      // Get total number of pages from carousel
+      const totalPages = document.querySelectorAll('.carousel-item').length;
+
+      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+        const pageKey = `Page ${pageNum}`;
+        const pageTools = allSheets[pageKey] || [];
+
+        // Check if page has any Mark Blank tool
+        const hasMarkBlankTool = pageTools.some(tool => tool.tool === 'mark_blank');
+
+        // Check if page has actual student content (excluding printed text)
+        // We consider student content as tools applied to specific questions
+        const hasStudentContent = pageTools.some(tool =>
+          tool.tool !== 'mark_blank' &&
+          tool.tool !== 'seen' &&
+          tool.question_id && // Must be associated with a question
+          tool.tool !== 'rotate' && // Exclude rotation tools
+          tool.tool !== 'zoom' && // Exclude zoom tools
+          tool.tool !== 'pan' // Exclude pan tools
+        );
+
+        // Additional check: Look for meaningful evaluation tools
+        const hasEvaluationContent = pageTools.some(tool =>
+          ['add-marks', 'correct', 'incorrect', 'partial-correct', 'highlight', 'comment'].includes(tool.tool) &&
+          tool.question_id
+        );
+
+        // Page is considered blank if:
+        // 1. No actual student content (question-based tools)
+        // 2. No evaluation tools applied
+        // 3. No Mark Blank tool to indicate intentional blank marking
+        if (!hasStudentContent && !hasEvaluationContent && !hasMarkBlankTool) {
+          pagesNeedingMarking.push(pageNum);
+        }
+      }
+
+      return pagesNeedingMarking;
+    }
+
+    // Function to get total pages count
+    function getTotalPages() {
+      return document.querySelectorAll('.carousel-item').length;
+    }
+
+    // Function to update incomplete evaluation popup in real-time (pages requirement removed)
+    function updateIncompleteEvaluationPopup() {
+      if (incompleteEvaluationPopup) {
+        const unattemptedQuestions = getUnattemptedQuestions();
+
+        // Always close popup and proceed since pages requirement is removed
+        incompleteEvaluationPopup.close();
+        incompleteEvaluationPopup = null;
+        proceedWithSubmission();
+      }
+
+      // Also update the submit modal if it's open
+      updateSubmitModalStatus();
+    }
+
+    // Function to update page status (simplified - pages requirement removed)
+    function updatePageStatus() {
+      // This function is called but pages requirement is removed
+      // Keeping it for compatibility but it doesn't need to do anything
+      console.log('Page status update called (pages requirement removed)');
+    }
+
+    // Function to update submit modal with real-time status (pages requirement removed)
+    function updateSubmitModalStatus() {
+      const submitModal = document.getElementById('submitEntriesModal');
+      if (!submitModal || !submitModal.classList.contains('show')) return;
+
+      const unattemptedQuestions = getUnattemptedQuestions();
+      const incompleteAlert = document.getElementById('incompleteEvaluationAlert');
+      const unattemptedList = document.getElementById('unattemptedQuestionsList');
+      const submitBtn = document.getElementById('submitLockBtn');
+      const statusText = document.getElementById('submitStatusText');
+
+      // Always enable submit button since pages requirement is removed
+      if (incompleteAlert) {
+        incompleteAlert.style.display = 'block';
+
+        // Update questions section for display only
+        if (unattemptedList) {
+          if (unattemptedQuestions.length > 0) {
+            unattemptedList.innerHTML = `${unattemptedQuestions.map(q => `<span class="badge bg-warning me-1">Q.${q}</span>`).join('')}`;
+          } else {
+            unattemptedList.innerHTML = '<span class="text-success">✅ All questions attempted</span>';
+          }
+        }
+      }
+
+      // Always enable submit button
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit and Lock';
+      }
+
+      // Update status text
+      if (statusText) {
+        if (unattemptedQuestions.length > 0) {
+          statusText.innerHTML = `<i class="bi bi-info-circle"></i> ${unattemptedQuestions.length} question(s) not attempted (submission allowed)`;
+          statusText.className = 'text-info small me-auto';
+        } else {
+          statusText.innerHTML = '<i class="bi bi-check-circle"></i> All questions attempted - Ready to submit';
+          statusText.className = 'text-success small me-auto';
+        }
+      }
+    }
+
+    // Function to proceed with actual submission
+    function proceedWithSubmission() {
+      // Collect all data with better error handling
+      const entriesData = generateProtectedFiles();
+
+      // If no entries found, try alternative data collection
+      let finalEntriesData = entriesData;
+      if (!entriesData || entriesData.length === 0) {
+        finalEntriesData = collectAlternativeData();
+      }
+
+      if (!finalEntriesData || finalEntriesData.length === 0) {
+        Swal.fire({
+          title: 'No Evaluation Data Found!',
+          html: `
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>No evaluation data found to submit.</strong>
+          </div>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Please ensure:</strong><br>
+            • You have used evaluation tools on questions<br>
+            • Questions show as "Attempted" status<br>
+            • Marks have been assigned to questions
+          </div>
+        `,
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#0b76ef'
+        });
+        return;
+      }
+
+      // Show loading and proceed with submission
+      Swal.fire({
+        title: 'Processing Submission...',
+        html: `
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p><strong>Generating protected files...</strong></p>
+          <p class="mb-0">Processing <span class="badge bg-info">${finalEntriesData.length}</span> evaluation entries</p>
+        </div>
+      `,
+        icon: 'info',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Submit the data to backend
+      submitToBackend(finalEntriesData);
+    }
+
+    // Alternative data collection function
+    function collectAlternativeData() {
+      const entries = [];
+
+      // Try to get data from the main questions table
+      const questionsTable = document.getElementById('sheet-questions-table');
+      if (!questionsTable) {
+        return entries;
+      }
+
+      const rows = questionsTable.querySelectorAll('tbody tr');
+
+      rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+          let pageNum = cells[0].textContent.trim();
+          const questionNum = cells[1].textContent.trim();
+          const toolCell = cells[2];
+          const marksCell = cells[3];
+
+          // Clean page number
+          if (pageNum.startsWith('Page ')) {
+            pageNum = pageNum.replace('Page ', '');
+          }
+
+          // Extract tool information
+          let toolUsed = 'N/A';
+          let marksGiven = '0';
+
+          if (toolCell) {
+            const toolText = toolCell.textContent.trim();
+            if (toolText && toolText !== '') {
+              toolUsed = toolText;
+            }
+          }
+
+          if (marksCell) {
+            const marksText = marksCell.textContent.trim();
+            if (marksText && marksText !== '' && marksText !== '0') {
+              marksGiven = marksText;
+            }
+          }
+
+          // Only include entries with actual data
+          if (toolUsed !== 'N/A' || marksGiven !== '0') {
+            const timestamp = toolUsageTimestamps.get(`${pageNum}-${questionNum}`) || new Date().toLocaleString();
+
+            entries.push({
+              pageNumber: pageNum,
+              questionNumber: questionNum,
+              marksGiven: marksGiven,
+              toolsUsed: toolUsed,
+              timestamp: timestamp
+            });
+          }
+        }
+      });
+
+      return entries;
+    }
+
+    // Function to submit data to backend
+    function submitToBackend(entriesData) {
+      // Get the current evaluation data from the page
+      const images = [];
+      const carouselItems = document.querySelectorAll('.carousel-item');
+      carouselItems.forEach((item, index) => {
+        const img = item.querySelector('img');
+        if (img) {
+          images.push(img.src);
+        }
+      });
+
+      // Get questions data
+      const questions = window.questions || [];
+
+      // Get paper sheet data (canvas annotations)
+      const paperSheet = window.paperSheet || {};
+      Object.keys(paperSheet).forEach(pageKey => {
+        if (paperSheet[pageKey] && paperSheet[pageKey].length > 0) {
+          // Get the last state of each page
+          const lastState = paperSheet[pageKey][paperSheet[pageKey].length - 1];
+          if (lastState && lastState.image) {
+            paperSheet[pageKey] = [lastState];
+          }
+        }
+      });
+
+      // Get time taken
+      const timeTaken = document.getElementById('timeTaken')?.textContent || '00:00:00';
+
+      // Calculate total marks
+      let totalMarksObtained = 0;
+      questions.forEach(q => {
+        totalMarksObtained += parseFloat(q.obtained || 0);
+      });
+
+      const totalPossibleMarks = questions.reduce((sum, q) => sum + parseFloat(q.marks || 0), 0);
+
+      // Prepare submission data in the format Django expects
+      const submissionData = {
+        images: images,
+        paperSheet: paperSheet,
+        questions: questions,
+        timeTaken: timeTaken,
+        totalMarks: totalMarksObtained,
+        totalPossibleMarks: totalPossibleMarks
+      };
+
+      // Show loading
+      Swal.fire({
+        title: 'Processing Submission...',
+        html: `
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p><strong>Generating protected files...</strong></p>
+          <p class="mb-0">Processing evaluation data</p>
+        </div>
+      `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false
+      });
+
+      // Send to Django backend
+      fetch('/submit/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(submissionData)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showSubmissionSuccess(data);
+          } else {
+            showSubmissionError(data);
+          }
+        })
+        .catch(error => {
+          console.error('Submission error:', error);
+          // Show error message
+          Swal.fire({
+            title: 'Submission Error',
+            html: `
+          <div class="alert alert-danger">
+            <i class="bi bi-x-circle me-2"></i>
+            <strong>Error submitting evaluation:</strong><br>
+            ${error.message || 'Unknown error occurred'}
+          </div>
+        `,
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+          });
+        });
+    }
+
+    // Function to show submission success
+    function showSubmissionSuccess(data) {
+      // Immediately lock interface and show simple success message
+      lockInterface();
+
+      Swal.fire({
+        title: 'Submitted All Done!',
+        html: `
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle me-2"></i>
+          <strong>Your evaluation has been submitted successfully.</strong>
+        </div>
+        <div class="alert alert-info">
+          <i class="bi bi-clock-history me-2"></i>
+          <strong>Total Time Taken:</strong> ${getTotalTime()}
+        </div>
+        <div class="alert alert-secondary">
+          <i class="bi bi-info-circle me-2"></i>
+          The interface is now locked. No further changes can be made.
+        </div>
+      `,
+        icon: 'success',
+        confirmButtonText: 'Back to Login',
+        confirmButtonColor: '#0b76ef',
+        showCancelButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then(() => {
+        // Redirect to login page
+        window.location.href = '/login/';
+      });
+    }
+
+    // Function to show submission error
+    function showSubmissionError(data) {
+      Swal.fire({
+        title: 'Submission Failed!',
+        html: `
+        <div class="alert alert-danger">
+          <i class="bi bi-x-circle me-2"></i>
+          <strong>Error:</strong> ${data.message || 'Unknown error occurred'}
+        </div>
+        <p>Please try again or contact support if the problem persists.</p>
+      `,
+        icon: 'error',
+        confirmButtonText: 'Try Again',
+        confirmButtonColor: '#dc3545'
+      });
+    }
+
+    // Function to lock interface after submission
+    function lockInterface() {
+      // Disable all interactive elements
+      document.querySelectorAll('button, input, select, textarea, a').forEach(element => {
+        element.disabled = true;
+        element.style.pointerEvents = 'none';
+        element.style.opacity = '0.5';
+      });
+
+      // Disable tool buttons specifically
+      document.querySelectorAll('.btn-tool').forEach(button => {
+        button.disabled = true;
+        button.classList.add('disabled');
+        button.style.pointerEvents = 'none';
+      });
+
+      // Disable carousel navigation
+      const carousel = document.querySelector('#sliderCarousel');
+      if (carousel) {
+        const carouselInstance = bootstrap.Carousel.getInstance(carousel);
+        if (carouselInstance) {
+          carouselInstance.pause();
+        }
+      }
+
+      // Disable canvas interactions
+      document.querySelectorAll('canvas').forEach(canvas => {
+        canvas.style.pointerEvents = 'none';
+      });
+
+      // Add overlay to prevent any interaction
+      const overlay = document.createElement('div');
+      overlay.id = 'submission-lock-overlay';
+      overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    `;
+
+      overlay.innerHTML = `
+      <div style="text-align: center; color: white;">
+        <div style="font-size: 48px; margin-bottom: 20px;">
+          <i class="bi bi-lock-fill"></i>
+        </div>
+        <h2>Interface Locked</h2>
+        <p>Submission completed successfully</p>
+        <p>No further changes can be made</p>
+        
+        <button onclick="window.location.href='/login/'" style="
+          background: #0b76ef;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 6px;
+          font-size: 16px;
+          cursor: pointer;
+          margin-top: 20px;
+          pointer-events: auto;
+        ">
+          <i class="bi bi-arrow-left me-2"></i>Back to Login
+        </button>
+      </div>
+    `;
+
+      document.body.appendChild(overlay);
+
+      // Prevent right-click and keyboard shortcuts
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || e.key === 'Escape' || e.ctrlKey || e.altKey) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    // Connect submit button to submitAndLock function
+    document.addEventListener('DOMContentLoaded', function () {
+      const submitLockBtn = document.getElementById('submitLockBtn');
+      const cbx = document.getElementById('cbx');
+
+      if (submitLockBtn && cbx) {
+        submitLockBtn.addEventListener('click', function () {
+          // Check if checkbox is checked
+          if (!cbx.checked) {
+            // Show small alert if checkbox not checked
+            Swal.fire({
+              icon: 'warning',
+              title: 'Confirmation Required',
+              text: 'Please click the checkbox to confirm you have reviewed all entries.',
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              customClass: {
+                popup: 'small-toast'
+              }
+            });
+            return; // Don't proceed with submission
+          }
+          submitAndLock();
+        });
+
+        // Initially disable submit button
+        submitLockBtn.disabled = true;
+        submitLockBtn.classList.add('disabled');
+
+        // Enable/disable submit button based on checkbox
+        cbx.addEventListener('change', function () {
+          if (this.checked) {
+            submitLockBtn.disabled = false;
+            submitLockBtn.classList.remove('disabled');
+          } else {
+            submitLockBtn.disabled = true;
+            submitLockBtn.classList.add('disabled');
+          }
+        });
+      }
+
+      const submitModal = document.getElementById('submitEntriesModal');
+      if (submitModal) {
+        submitModal.addEventListener('show.bs.modal', function () {
+          updateTotalSheetsCount();
+          updatePageStatus();
+          updateEntriesTable(); // Update entries table when modal opens
+          // Update total time from main timer
+          const mainTimer = document.getElementById('timeTaken');
+          const modalTimer = document.getElementById('totalTimeTaken');
+          if (mainTimer && modalTimer) {
+            modalTimer.textContent = mainTimer.textContent;
+          }
+        });
+      }
+
+      // Set up enhanced real-time updates for page status and tool usage
+      const observer = new MutationObserver(function (mutations) {
+        let shouldUpdate = false;
+        mutations.forEach(function (mutation) {
+          // Check if the mutation is in the questions table or related elements
+          if (mutation.target.id === 'sheet-questions-table' ||
+            mutation.target.closest('#sheet-questions-table') ||
+            mutation.target.classList.contains('sheet-questions-table') ||
+            mutation.target.closest('.table-responsive')) {
+            shouldUpdate = true;
+
+            // Check for new tool usage and record timestamp immediately
+            const tableBody = document.querySelector('#sheet-questions-table tbody');
+            if (tableBody) {
+              const rows = tableBody.querySelectorAll('tr');
+              rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                  let pageNum = cells[0].textContent.trim();
+                  const questionNum = cells[1].textContent.trim();
+                  const toolCell = cells[2]; // Tool column
+                  const marksCell = cells[3]; // Marks/Text column
+
+                  // Clean page number
+                  if (pageNum.startsWith('Page ')) {
+                    pageNum = pageNum.replace('Page ', '');
+                  }
+
+                  // Extract tool information
+                  let toolUsed = 'N/A';
+                  let marksGiven = '0';
+
+                  if (toolCell) {
+                    const toolText = toolCell.textContent.trim();
+                    if (toolText && toolText !== '') {
+                      toolUsed = toolText;
+                    }
+                  }
+
+                  if (marksCell) {
+                    const marksText = marksCell.textContent.trim();
+                    if (marksText && marksText !== '' && marksText !== '0') {
+                      marksGiven = marksText;
+                    }
+                  }
+
+                  // Record timestamp for new tool usage immediately
+                  if (toolUsed !== 'N/A' || marksGiven !== '0') {
+                    const key = `${pageNum}-${questionNum}`;
+                    if (!toolUsageTimestamps.has(key)) {
+                      recordToolUsage(pageNum, questionNum, toolUsed, marksGiven);
+                    }
+                  }
+                }
+              });
+            }
+          }
+
+          // Also check for changes in select elements and inputs
+          if (mutation.target.tagName === 'SELECT' ||
+            mutation.target.tagName === 'INPUT' ||
+            mutation.target.tagName === 'TEXTAREA') {
+            shouldUpdate = true;
+          }
+        });
+
+        if (shouldUpdate) {
+          setTimeout(() => {
+            updateEntriesTable(); // Also update entries table
+          }, 100); // Small delay to ensure DOM is updated
+        }
+      });
+
+      // Observe the entire document for changes
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true
+      });
+
+      // Also set up periodic updates as backup
+      setInterval(() => {
+        updateEntriesTable(); // Update entries table periodically
+      }, 2000); // Update every 2 seconds
+
+      // Initial update
+      setTimeout(() => {
+        updateEntriesTable(); // Initial entries table update
+      }, 500);
+    });
+  </script>
+
+
+  <!-- Sheets Modal -->
+  <div class="modal fade" id="sheetsModal" tabindex="-1" aria-labelledby="sheetsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="sheetsModalLabel">
+            <i class="bi bi-file-earmark-image"></i> Sheets Viewer - <span id="totalSheetsCount">0</span> Pages
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <!-- Sheets Grid Container -->
+          <div id="sheetsGrid" class="sheets-grid-container">
+            <!-- Grid content will be dynamically loaded -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="d-flex justify-content-between w-100">
+            <div>
+              <button type="button" class="btn btn-outline-secondary" id="toggleViewBtn">
+                <i class="bi bi-grid"></i> Toggle View
+              </button>
+              <button type="button" class="btn btn-outline-info" id="fullscreenBtn">
+                <i class="bi bi-fullscreen"></i> Full Screen
+              </button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Screen Viewer Modal -->
+  <div class="modal fade" id="fullscreenViewer" tabindex="-1" aria-labelledby="fullscreenViewerLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content bg-dark">
+        <div class="modal-header bg-dark border-0">
+          <h5 class="modal-title text-white" id="fullscreenViewerLabel">
+            <i class="bi bi-image"></i> Page <span id="currentPageNumber">1</span> of <span id="totalPages">0</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body d-flex align-items-center justify-content-center p-0"
+          style="height: calc(100vh - 120px);">
+          <!-- Main Image Viewer -->
+          <div class="position-relative w-100 h-100 d-flex align-items-center justify-content-center">
+            <img id="fullscreenImage" src="" alt="Page" class="img-fluid"
+              style="max-height: 100%; max-width: 100%; object-fit: contain;">
+
+            <!-- Navigation Controls -->
+            <button id="prevPageBtn"
+              class="btn btn-dark btn-lg position-absolute start-0 top-50 translate-middle-y ms-3">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button id="nextPageBtn" class="btn btn-dark btn-lg position-absolute end-0 top-50 translate-middle-y me-3">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Thumbnail Strip -->
+          <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 p-3">
+            <div id="thumbnailStrip" class="d-flex gap-2 overflow-auto">
+              <!-- Thumbnails will be dynamically loaded -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+
+</body>
+
+</html>

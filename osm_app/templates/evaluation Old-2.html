@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VeriEval Marking Panel</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      background: #1e88e5;
+      color: #fff;
+      padding: 16px;
+      font-size: 1.5rem;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      justify-content: space-between;
+    }
+
+    .tool-panel {
+      height: calc(100vh - 95px);
+      width: 10%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-left: 1px solid #ccc;
+      border-right: 1px solid #ccc;
+      background: #fff;
+    }
+
+    .pagination {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      /* Center pagination controls */
+      padding: 12px;
+      border-top: 1px solid #ccc;
+      border-bottom: 1px solid #ccc;
+      background: #fff;
+      width: 100%;
+      /* Ensures it spans the full width of parent */
+      box-sizing: border-box;
+      /* Includes padding in width calculation */
+    }
+
+    .pagination-controls {
+      display: flex;
+      flex-wrap: wrap;
+      /* Allows wrapping on smaller screens */
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      overflow-x: auto;
+      /* Enables horizontal scroll if buttons overflow */
+      width: 100%;
+      padding: 4px 0;
+    }
+
+    .tool-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+      overflow-y: auto;
+      flex: 1;
+      width: 90%;
+    }
+
+    .question-table,
+    .marks-table {
+      background: #fff;
+      padding: 16px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      height: 50%;
+      overflow-y: auto;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .marks-table {
+      border-top: none;
+    }
+
+    .page-btn,
+    .tool-btn {
+      padding: 4px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 32px;
+      height: 32px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .page-btn.unchecked {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+
+    .page-btn.current {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .page-btn.checked {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .arrow-btn {
+      background: #4caf50;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      padding: 4px 6px;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .pdf-viewer {
+      width: 50%;
+      padding: 0px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .tool-controls .tool-btn {
+      background-color: #aee4ff;
+      color: #003344;
+      width: 100%;
+    }
+
+    .tool-controls .tool-btn.active {
+      background: #007acc;
+      color: white;
+    }
+
+    .pdf-image {
+      /* max-height: 80vh; */
+      max-width: 100%;
+      object-fit: contain;
+      border: 1px solid #ccc;
+    }
+
+    .mark-overlay {
+      position: absolute;
+      font-size: 24px;
+      color: red;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .footer {
+      padding: 12px 16px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+      }
+
+      .pagination {
+        display: none;
+        border-left: none;
+        border-top: 1px solid #ccc;
+        width: 100%;
+      }
+
+      .pagination.show {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .pagination-toggle {
+        display: block;
+      }
+
+      .pdf-viewer {
+        width: 100%;
+      }
+
+      .tool-panel {
+        display: none;
+      }
+    }
+
+    #pdfContainer {
+      position: relative;
+      width: 100%;
+      text-align: center;
+    }
+
+    .question-rows {
+      display: flex;
+      flex-direction: column;
+      width: 40%;
+    }
+
+    /* .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      cursor: crosshair;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.555);
+
+    } */
+
+
+
+
+
+    .pdf-image-parent {
+      height: 100vh;
+      overflow: auto;
+      width: 100%;
+      position: relative;
+      background-color: #f0f0f0;
+    }
+
+    .pdf-image-parent img {
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+
+
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      min-height: 100%;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      z-index: 2;
+      pointer-events: auto;
+      /* Enable clicking */
+    }
+
+
+    /* .pdf-image-parent {
+      position: relative;
+      max-height: 80vh;
+      overflow: auto;
+    } */
+
+    .active td {
+      background: gray;
+    }
+
+    #main {
+      margin: 0;
+      padding: 0;
+    }
+
+    .hover-on-border{
+      border: 2px dashed rgba(255, 255, 0, 0);
+    }
+    .hover-on-border:hover {
+      border: 2px dashed yellow;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main" class="container-fluid">
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+  {{ images|json_script:"imageData" }}
+  {% verbatim %}
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function ToolPalette() {
+      const [questions, setQuestion] = useState([
+        {
+          id: 1,
+          question: "What is the capital of France?",
+          maxMarks: 5
+        },
+        {
+          id: 2,
+          question: "What is the largest planet in our solar system?",
+          maxMarks: 5
+        },
+        {
+          id: 3,
+          question: "Who wrote 'Hamlet'?",
+          maxMarks: 5
+        },
+        {
+          id: 4,
+          question: "What is the boiling point of water in Celsius?",
+          maxMarks: 3
+        },
+        {
+          id: 5,
+          question: "What is the currency of Japan?",
+          maxMarks: 60
+        }
+      ]);
+      const [currentPage, setCurrentPage] = useState(0);
+      const [currentQuestion, setCurrentQuestion] = useState(null);
+      const [customText, setCustomText] = useState(null);
+      const [pageStatusArray, setPageStatusArray] = useState([]);
+      const [selectedTool, setSelectedTool] = useState({});
+      const [questionMark, setQuestionMark] = useState({});
+      const imageSources = JSON.parse(document.getElementById("imageData").textContent);
+      const symbols = ["✔", "✘", "✎"];//, ".", "/", "1/2", "1/3", "1/4"];
+      const [tools, setTools] = useState(symbols);
+
+
+
+      useEffect(() => {
+
+        const parent = $('.pdf-image-parent').eq(0); // Get the first parent
+        const image = parent.find('.pdf-image')[0];  // Get the actual image element
+
+        if (image.complete) {
+          // If already loaded
+          updateOverlayHeight();
+        } else {
+          // Wait for image to load
+          image.onload = updateOverlayHeight;
+        }
+
+
+        function updateOverlayHeight() {
+          const scrollHeight = image.scrollHeight;
+          parent.find('.overlay').css('height', `${scrollHeight}px`);
+        }
+
+
+      }, [currentPage]);
+      useEffect(() => {
+        if (currentQuestion === null || currentQuestion === undefined) return;
+
+        const totalMarksForCurrentQuestion = Object.values(questionMark ?? {})
+          .flat()
+          .filter(mark => mark.question === currentQuestion)
+          .reduce(
+            (sum, mark) =>
+              sum + (!symbols.includes(mark.marks) ? Number(mark.marks || 0) : 0),
+            0
+          );
+
+        const question = questions[currentQuestion];
+        if (!question) return;
+
+        const numbers = Array.from(
+          { length: (question.maxMarks - totalMarksForCurrentQuestion) * 2 + 1 },
+          (_, i) => i * 0.5
+        );
+
+        setTools([...symbols, ...numbers]);
+      }, [questionMark, currentQuestion, questions]); // Add dependencies here
+
+      return (
+        <>
+
+          <div className="main-content">
+            <div className="pdf-viewer">
+              <div id="pdfContainer" >
+                {imageSources[currentPage] && (
+                  <div key={currentPage} className="pdf-image-parent">
+                    <img
+                      className={`pdf-image`}
+                      src={imageSources[currentPage]}
+
+                      alt={`PDF Page ${currentPage + 1}`}
+                    />
+                    <div
+                      className="overlay"
+                      data-page={currentPage}
+                      onClick={(e) => {
+                        if (selectedTool[currentQuestion] !== undefined && selectedTool[currentQuestion] !== null) {
+                          const overlay = e.currentTarget;
+                          const scrollContainer = overlay.closest(".pdf-image-parent");
+
+                          const containerRect = scrollContainer.getBoundingClientRect();
+                          const x = e.clientX - containerRect.left + scrollContainer.scrollLeft;
+                          const y = e.clientY - containerRect.top + scrollContainer.scrollTop;
+
+                          const width = scrollContainer.scrollWidth;
+                          const height = scrollContainer.scrollHeight;
+
+                          const xPercent = (x / width) * 100;
+                          const yPercent = (y / height) * 100;
+
+                          const newMark = {
+                            page: currentPage,
+                            question: currentQuestion,
+                            marks: selectedTool[currentQuestion],
+                            text: selectedTool[currentQuestion] === "✎" ? customText : null,
+                            x: `${xPercent}%`,
+                            y: `${yPercent}%`,
+                          };
+
+
+
+                          if (currentQuestion !== null) {
+
+                            const totalMarksForCurrentQuestion = Object.values(questionMark ?? {})
+                              .flat()
+                              .filter(mark => mark.question === currentQuestion)
+                              .reduce((sum, mark) => sum + (!symbols.includes(mark.marks) ? Number(mark.marks || 0) : 0), 0);
+
+                            if (totalMarksForCurrentQuestion + Number(selectedTool[currentQuestion]) > questions[currentQuestion].maxMarks) {
+                              alert('Marks exceed maximum allowed.');
+                              return;
+                            }
+                          }
+
+                          setQuestionMark(prev => {
+                            const updated = { ...prev };
+                            const marksForPage = Array.isArray(updated[currentPage])
+                              ? [...updated[currentPage]]
+                              : [];
+                            marksForPage.push(newMark);
+                            updated[currentPage] = marksForPage;
+                            return updated;
+                          });
+                        } else {
+                          alert("Please select a tool first.");
+                        }
+                      }}
+                    >
+                      {(questionMark?.[currentPage] ?? []).map((item, idx) => (
+                        <span
+                          key={idx}
+                          className="hover-on-border"
+                          title="Click to remove"
+                          style={{
+                            position: 'absolute',
+                            left: item.x,
+                            top: item.y,
+                            maxWidth: '300px',
+                            fontWeight: 'bolder',
+                            color: 'red',
+                            cursor: 'pointer',
+                            fontSize: symbols.includes(item.marks) && item.marks !== "✎" ? '4em' : "1.5em",
+                            lineHeight: symbols.includes(item.marks) && item.marks !== "✎" ? '1' : "1",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // prevents click bubbling to overlay
+                            setQuestionMark(prev => {
+                              const updated = { ...prev };
+                              updated[currentPage] = (updated[currentPage] ?? []).filter((_, i) => i !== idx);
+                              return updated;
+                            });
+                          }}
+                        >
+                          {symbols.includes(item.marks) && item.marks !== "✎" && (
+                            <>{item.marks}</>
+                          )}
+                          {symbols.includes(item.marks) && item.marks === "✎" && (
+                            <>{item.text}</>
+                          )}
+                          {!symbols.includes(item.marks) && (
+                            <>
+                              <span style={{ fontSize: '60px', fontWeight: '50' }}>
+                                {Number(item.marks) > 0 ? '✔' : '✖'}
+                              </span>
+                              Q. {questions[item.question]?.id} : {item.marks}
+                            </>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            <div className="tool-panel">
+              <div id="reactToolPalette" className="tool-controls">
+                {tools.map((item, idx) => (
+                  <button
+                    key={idx}
+                    className={`tool-btn ${selectedTool[currentQuestion] === item ? 'active' : ''}`}
+                    onClick={() => {
+                      if (item === "✎") {
+                        let text = window.prompt("Write Comment ? ");
+                        if (text)
+                          setCustomText(window.prompt("Write Comment ? "));
+                        else
+                          return;
+                      }
+                      const updatedTool = { ...selectedTool, [currentQuestion]: item };
+                      setSelectedTool(updatedTool);
+
+                    }}
+                  >
+                    {item}
+                  </button>
+                ))}
+
+              </div>
+            </div>
+
+            <div className="question-rows">
+              <div className="header">VeriEval Marking Panel</div>
+              <div className="question-table">
+                <h2>Questions</h2>
+                <table className="table table-sm table-bordered table-hoverable table-stripped" width="100%">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Question</th>
+                      <th>Max Marks</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="questionTableBody">
+                    {questions.map((q, index) => (
+                      <tr key={q.id} data-question-id={q.id} data-max-marks={q.maxMarks} className={currentQuestion == index ? 'active' : ""}>
+                        <td>{q.id}</td>
+                        <td>{q.question}</td>
+                        <td>{q.maxMarks}</td>
+                        <td>
+                          <button className="btn btn-sm btn-primary" onClick={() => {
+
+
+                            //   const numbers = Array.from(
+                            //     { length: (q.maxMarks - totalMarksForCurrentQuestion) * 2 + 1 },
+                            //     (_, i) => (i * 0.5)
+                            //   );
+                            //   return [...symbols, ...numbers];
+                            // });
+                            setCurrentQuestion(index);
+                          }} type="button">Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="marks-table">
+                <h2>Marks</h2>
+                <table className={'table table-sm table-hoverenable table-bordered'}>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Obtained</th>
+                      <th>Marks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {questions.map((item, i) => {
+                      // Get all marks for this question grouped by page
+                      const marksByPage = {};
+
+                      Object.entries(questionMark ?? {}).forEach(([page, marks]) => {
+                        marks.forEach(mark => {
+                          if (mark.question === i) {
+                            if (!symbols.includes(mark.marks))
+                              marksByPage[page] = (marksByPage[page] || 0) + (!symbols.includes(mark.marks) ? Number(mark.marks || 0) : 0);
+                          }
+                        });
+                      });
+
+                      // Sum all marks for this question
+                      const totalMarksForQuestion = Object.values(marksByPage).reduce((sum, val) => sum + val, 0);
+
+                      // Format per-page string like P1: 5, P2: 2
+                      const perPageDetails = Object.entries(marksByPage)
+                        .map(([page, mark]) => `P${parseInt(page) + 1}: ${mark}`)
+                        .join(', ');
+
+                      return (
+                        <tr key={i} className={currentQuestion == i ? 'active' : ""}>
+                          <td>{item.id}</td>
+                          <td>{totalMarksForQuestion} / {item.maxMarks}</td>
+                          <td>{perPageDetails}</td>
+                        </tr>
+                      );
+                    })}
+
+
+                  </tbody>
+                </table>
+              </div>
+              <div id="pagination" className="pagination">
+                <div id="paginationControls" className="pagination-controls">
+                  {imageSources.map((_, index) => {
+                    const isCurrent = index === currentPage;
+                    const isChecked = pageStatusArray[index];
+
+                    let className = "page-btn";
+                    if (isCurrent) className += " current";
+                    else if (isChecked) className += " checked";
+                    else className += " unchecked";
+
+                    return (
+                      <button
+                        key={index}
+                        className={className}
+                        data-index={index}
+                        onClick={() => {
+                          setCurrentPage(index);
+                        }}
+                        onFocus={() => {
+                          setCurrentPage(index);
+                        }}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("main"));
+    root.render(<ToolPalette />);
+
+  </script>
+  {% endverbatim %}
+
+</body>
+
+</html>

@@ -1,0 +1,302 @@
+[
+    {
+        "id": 1,
+        "question_no": 1,
+        "question": "What is HTML?",
+        "marks": 2
+    },
+    {
+        "id": 2,
+        "question_no": 2,
+        "question": "Define CSS and its types.",
+        "marks": 3
+    },
+    {
+        "id": 3,
+        "question_no": 3,
+        "question": "What is JavaScript used for?",
+        "marks": 2
+    },
+    {
+        "id": 4,
+        "question_no": 4,
+        "question": "Explain event bubbling in JavaScript.",
+        "marks": 4
+    },
+    {
+        "id": 5,
+        "question_no": 5,
+        "question": "Differentiate between var, let, and const.",
+        "marks": 3
+    },
+    {
+        "id": 6,
+        "question_no": 6,
+        "question": "What is a responsive design?",
+        "marks": 2
+    },
+    {
+        "id": 7,
+        "question_no": 7,
+        "question": "Explain the box model in CSS.",
+        "marks": 3
+    },
+    {
+        "id": 8,
+        "question_no": 8,
+        "question": "What is DOM?",
+        "marks": 2
+    },
+    {
+        "id": 9,
+        "question_no": 9,
+        "question": "How does Bootstrap grid system work?",
+        "marks": 3
+    },
+    {
+        "id": 10,
+        "question_no": 10,
+        "question": "What are media queries in CSS?",
+        "marks": 2
+    },
+    {
+        "id": 11,
+        "question_no": 11,
+        "question": "Explain semantic HTML.",
+        "marks": 2
+    },
+    {
+        "id": 12,
+        "question_no": 12,
+        "question": "What is a pseudo-class in CSS?",
+        "marks": 2
+    },
+    {
+        "id": 13,
+        "question_no": 13,
+        "question": "Difference between inline and block elements.",
+        "marks": 2
+    },
+    {
+        "id": 14,
+        "question_no": 14,
+        "question": "What is a callback function in JS?",
+        "marks": 3
+    },
+    {
+        "id": 15,
+        "question_no": 15,
+        "question": "What is the purpose of JSON?",
+        "marks": 2
+    },
+    {
+        "id": 16,
+        "question_no": 16,
+        "question": "Explain localStorage and sessionStorage.",
+        "marks": 3
+    },
+    {
+        "id": 17,
+        "question_no": 17,
+        "question": "What is AJAX?",
+        "marks": 2
+    },
+    {
+        "id": 18,
+        "question_no": 18,
+        "question": "Difference between GET and POST methods.",
+        "marks": 2
+    },
+    {
+        "id": 19,
+        "question_no": 19,
+        "question": "What is an API?",
+        "marks": 2
+    },
+    {
+        "id": 20,
+        "question_no": 20,
+        "question": "Explain async/await in JavaScript.",
+        "marks": 4
+    },
+    {
+        "id": 21,
+        "question_no": 21,
+        "question": "What is RESTful API?",
+        "marks": 3
+    },
+    {
+        "id": 22,
+        "question_no": 22,
+        "question": "What are JavaScript Promises?",
+        "marks": 3
+    },
+    {
+        "id": 23,
+        "question_no": 23,
+        "question": "What is CORS?",
+        "marks": 2
+    },
+    {
+        "id": 24,
+        "question_no": 24,
+        "question": "Explain closures in JavaScript.",
+        "marks": 4
+    },
+    {
+        "id": 25,
+        "question_no": 25,
+        "question": "What are arrow functions?",
+        "marks": 2
+    },
+    {
+        "id": 26,
+        "question_no": 26,
+        "question": "What is the difference between == and ===?",
+        "marks": 2
+    },
+    {
+        "id": 27,
+        "question_no": 27,
+        "question": "What is hoisting in JavaScript?",
+        "marks": 3
+    },
+    {
+        "id": 28,
+        "question_no": 28,
+        "question": "What are template literals?",
+        "marks": 2
+    },
+    {
+        "id": 29,
+        "question_no": 29,
+        "question": "Explain array methods like map, filter, reduce.",
+        "marks": 4
+    },
+    {
+        "id": 30,
+        "question_no": 30,
+        "question": "What is destructuring in JavaScript?",
+        "marks": 2
+    },
+    {
+        "id": 31,
+        "question_no": 31,
+        "question": "What is a promise chain?",
+        "marks": 3
+    },
+    {
+        "id": 32,
+        "question_no": 32,
+        "question": "Explain ES6 modules.",
+        "marks": 3
+    },
+    {
+        "id": 33,
+        "question_no": 33,
+        "question": "What is a service worker?",
+        "marks": 3
+    },
+    {
+        "id": 34,
+        "question_no": 34,
+        "question": "What is a progressive web app (PWA)?",
+        "marks": 3
+    },
+    {
+        "id": 35,
+        "question_no": 35,
+        "question": "What is the purpose of npm?",
+        "marks": 2
+    },
+    {
+        "id": 36,
+        "question_no": 36,
+        "question": "What is Babel in JS development?",
+        "marks": 2
+    },
+    {
+        "id": 37,
+        "question_no": 37,
+        "question": "What is Webpack?",
+        "marks": 2
+    },
+    {
+        "id": 38,
+        "question_no": 38,
+        "question": "Difference between null and undefined.",
+        "marks": 2
+    },
+    {
+        "id": 39,
+        "question_no": 39,
+        "question": "What is NaN in JavaScript?",
+        "marks": 2
+    },
+    {
+        "id": 40,
+        "question_no": 40,
+        "question": "What is the use of setTimeout?",
+        "marks": 2
+    },
+    {
+        "id": 41,
+        "question_no": 41,
+        "question": "Explain event delegation.",
+        "marks": 3
+    },
+    {
+        "id": 42,
+        "question_no": 42,
+        "question": "What is a higher-order function?",
+        "marks": 3
+    },
+    {
+        "id": 43,
+        "question_no": 43,
+        "question": "What are WebSockets?",
+        "marks": 2
+    },
+    {
+        "id": 44,
+        "question_no": 44,
+        "question": "What is debouncing and throttling?",
+        "marks": 3
+    },
+    {
+        "id": 45,
+        "question_no": 45,
+        "question": "What are custom events in JavaScript?",
+        "marks": 2
+    },
+    {
+        "id": 46,
+        "question_no": 46,
+        "question": "How to prevent default browser behavior?",
+        "marks": 2
+    },
+    {
+        "id": 47,
+        "question_no": 47,
+        "question": "What is a virtual DOM?",
+        "marks": 3
+    },
+    {
+        "id": 48,
+        "question_no": 48,
+        "question": "Difference between SSR and CSR?",
+        "marks": 3
+    },
+    {
+        "id": 49,
+        "question_no": 49,
+        "question": "What is lazy loading?",
+        "marks": 2
+    },
+    {
+        "id": 50,
+        "question_no": 50,
+        "question": "What is the shadow DOM?",
+        "marks": 3
+    }
+]

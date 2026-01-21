@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Fabric.js Marking Panel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 1rem;
+        }
+
+        .tools {
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Marking Canvas Panel</h2>
+
+    <div class="tools">
+        <input type="file" id="imgLoader" accept="image/*" />
+        <button onclick="setFreeDraw(true)">✏ Pencil</button>
+        <button onclick="addText()">🅰 Text</button>
+        <button onclick="drawShape('line')">📏 Line</button>
+        <button onclick="drawShape('circle')">🔵 Circle</button>
+        <button onclick="drawShape('rect')">⬛ Box</button>
+        <button onclick="addMark('✔', 'green')">✅ Correct</button>
+        <button onclick="addMark('✘', 'red')">❌ Wrong</button>
+        <button onclick="deleteSelected()">🧽 Erase</button>
+        <button onclick="undo()">↩️ Undo</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="500"></canvas>
+
+    <script>
+        const canvas = new fabric.Canvas('canvas');
+        let history = [];
+
+        function saveHistory() {
+            history.push(JSON.stringify(canvas));
+            if (history.length > 20) history.shift();
+        }
+
+        function undo() {
+            if (history.length > 0) {
+                canvas.loadFromJSON(history.pop(), () => canvas.renderAll());
+            }
+        }
+
+        function setFreeDraw(enable) {
+            canvas.isDrawingMode = enable;
+            canvas.freeDrawingBrush.color = 'black';
+            canvas.freeDrawingBrush.width = 2;
+            if (enable) saveHistory();
+        }
+
+        function addText() {
+            const text = new fabric.Textbox("Text here", {
+                left: 100,
+                top: 100,
+                fill: "black",
+                fontSize: 20
+            });
+            canvas.add(text);
+            saveHistory();
+        }
+
+        function addMark(symbol, color) {
+            const mark = new fabric.Text(symbol, {
+                left: 150,
+                top: 150,
+                fill: color,
+                fontSize: 32,
+                fontWeight: 'bold'
+            });
+            canvas.add(mark);
+            saveHistory();
+        }
+
+        function drawShape(type) {
+            canvas.isDrawingMode = false;
+            let shape;
+            switch (type) {
+                case 'line':
+                    shape = new fabric.Line([50, 100, 200, 100], {
+                        stroke: 'black', strokeWidth: 2
+                    });
+                    break;
+                case 'circle':
+                    shape = new fabric.Circle({
+                        radius: 30, fill: 'transparent', stroke: 'blue',
+                        left: 100, top: 100
+                    });
+                    break;
+                case 'rect':
+                    shape = new fabric.Rect({
+                        width: 100, height: 60,
+                        fill: 'transparent', stroke: 'black',
+                        left: 120, top: 120
+                    });
+                    break;
+            }
+            canvas.add(shape);
+            saveHistory();
+        }
+
+        function deleteSelected() {
+            const obj = canvas.getActiveObject();
+            if (obj) {
+                canvas.remove(obj);
+                saveHistory();
+            }
+        }
+
+        // Image Upload
+        document.getElementById('imgLoader').addEventListener('change', function (e) {
+            const reader = new FileReader();
+            reader.onload = function (f) {
+                const data = f.target.result;
+                fabric.Image.fromURL(data, function (img) {
+                    img.scaleToWidth(800); // Scale image to fit canvas width
+                    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                        scaleX: canvas.width / img.width,
+                        scaleY: canvas.height / img.height,
+                        originX: 'left',
+                        originY: 'top'
+                    });
+                    saveHistory();
+                });
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        saveHistory();
+    </script>
+
+</body>
+
+</html>
