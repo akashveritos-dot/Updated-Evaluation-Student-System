@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Media
+media/
+static/
+
+# IDE
+.vscode/
+.idea/
+
+# Database
+*.sqlite3
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & Keys (CRITICAL)
+*.key
+*.pub
+verieval_deploy_key
+github_deploy_key
